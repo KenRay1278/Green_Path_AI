@@ -1,0 +1,44 @@
+# Green Path AI - Requirements
+# Use conda (environment.yml) for best compatibility
+# This is a fallback for pip users
+
+# Geospatial libraries (install these first!)
+osmnx==2.0.7
+geopandas==1.1.2
+shapely==2.1.2
+pyproj==3.7.2
+rasterio==1.4.4
+fiona>=1.9
+
+# Scientific computing
+numpy==2.4.0
+pandas==2.3.3
+scipy>=1.11
+scikit-learn==1.8.0
+
+# Graph algorithms
+networkx==3.6.1
+
+# Visualization
+matplotlib==3.10.8
+folium==0.20.0
+
+# Web server
+flask==3.1.2
+flask-cors==6.0.2
+werkzeug==3.1.4
+blinker==1.9.0
+itsdangerous==2.2.0
+
+# HTTP requests
+requests==2.32.5
+certifi
+
+# NOTE: On Windows, some geospatial packages (GDAL, Fiona, Rasterio)
+# are difficult to install with pip. Strongly recommend using conda!
+#
+# If you must use pip on Windows:
+# 1. Install from wheels: https://www.lfd.uci.edu/~gohlke/pythonlibs/
+# 2. Or use conda for geospatial packages only:
+#    conda install -c conda-forge osmnx geopandas
+#    pip install flask flask-cors

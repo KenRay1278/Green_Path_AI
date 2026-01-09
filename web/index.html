@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Green Map AI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="header">
+        <h1>Green Map AI</h1>
+        <p>Comparing fastest route vs greenest route in Greater Jakarta</p>
+        <p id="created">A project created for BINUS AI AOL</p>
+    </div>
+    
+    <button class="menu-btn" onclick="toggleMenu()">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+    </button>
+    
+    <div class="control-panel" id="controlPanel">
+        <div class="control-section">
+            <h3>Display Settings</h3>
+            <div class="toggle-item">
+                <label for="darkMode">Dark Mode</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="darkMode" onchange="toggleDarkMode()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="control-section">
+            <h3>Route Display</h3>
+            <div class="toggle-item">
+                <label for="showFastest">Show Fastest Route</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="showFastest" checked onchange="toggleRoute('time')">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="toggle-item">
+                <label for="showGreenest">Show Greenest Route</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="showGreenest" checked onchange="toggleRoute('pollution')">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="control-section">
+            <h3>Animation Settings</h3>
+            <div class="toggle-item">
+                <label for="enableAnimation">Enable Animation</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="enableAnimation" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="toggle-item">
+                <label for="animateTime">Animate Time Route</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="animateTime" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="toggle-item">
+                <label for="animatePollution">Animate Pollution Route</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="animatePollution" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <button class="btn btn-primary" onclick="replayAnimation()">Replay Animation</button>
+        </div>
+        
+        <div class="control-section">
+            <h3>Actions</h3>
+            <button class="btn btn-secondary" onclick="resetMap()">Reset Map</button>
+        </div>
+        
+        <div class="control-section">
+            <h3>Legend</h3>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #3b82f6;"></div>
+                <span>Fastest Route</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #10b981;"></div>
+                <span>Greenest Route</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #fbbf24; opacity: 0.5;"></div>
+                <span>Explored Nodes</span>
+            </div>
+        </div>
+    </div>
+    
+    <div id="map"></div>
+    
+    <div class="stats-card" id="statsCard">
+        <div class="stats-grid">
+            <div class="stat-box fastest">
+                <div class="stat-title">
+                    <span class="stat-icon">⚡</span>
+                    <span>Fastest Route</span>
+                </div>
+                <div id="fastestStats"></div>
+            </div>
+            <div class="stat-box greenest">
+                <div class="stat-title">
+                    <span class="stat-icon">🌱</span>
+                    <span>Greenest Route</span>
+                </div>
+                <div id="greenestStats"></div>
+            </div>
+            <div class="stat-box comparison">
+                <div class="stat-title">
+                    <span class="stat-icon">📊</span>
+                    <span>Comparison</span>
+                </div>
+                <div id="comparisonStats"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="loading-indicator" id="loadingIndicator">
+        Calculating routes...
+    </div>
+    <div id="toast-notification" class="toast-notification"></div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

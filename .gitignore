@@ -1,0 +1,131 @@
+#DATA FILES (Generated, Large)
+data/raw/*.graphml
+data/raw/*.png
+data/processed/*.pkl
+data/processed/*.json
+
+# Keep directory structure
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+#SOURCE CODE
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+#Generated JSON routes
+src/routes_data.json
+
+#SCRIPTS
+# OSMnx cache
+scripts/cache/
+*.osmnx_cache/
+
+#ENVIRONMENTS
+# Conda environments
+green_path/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment exports (optional - uncomment if you don't want to commit)
+# environment_backup.yml
+
+#IDEs
+# VS Code
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+#OS FILES
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+*~
+.directory
+
+#LOGS
+*.log
+logs/
+*.log.*
+
+#TEMPORARY FILES
+*.tmp
+*.temp
+*.swp
+*.swo
+temp/
+tmp/
+
+#BUILD & DISTRIBUTION
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+#TESTING
+.pytest_cache/
+.coverage
+.tox/
+htmlcov/
+
+#FLASK
+instance/
+.webassets-cache
+
+#BACKUP FILES
+*.bak
+*.backup
+*.old
+
+#SECRETS (NEVER COMMIT)
+.env
+.env.local
+.env.*.local
+secrets.json
+config_local.py
+
+#KEEP THESE
+# Keep example/template files
+!example.env
+!config_template.py
