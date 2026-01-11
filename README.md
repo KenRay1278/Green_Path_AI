@@ -2,7 +2,7 @@
 
 A college project implementing A* pathfinding algorithm comparing time-optimized vs pollution-optimized routes in Jakarta, Indonesia.
 
-## 🎯 Project Overview
+## Project Overview
 
 This AI system provides two route options:
 - **Fastest Route** ⚡ - Minimizes travel time
@@ -12,7 +12,7 @@ Uses real Jakarta road network data from OpenStreetMap with custom pollution est
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 jakarta_pathfinding_ai/
@@ -41,14 +41,13 @@ jakarta_pathfinding_ai/
 │
 ├── environment.yml                   # Conda environment
 ├── setup_environment.py              # Setup script
-├── run_server.py                     # Server launcher
 ├── .gitignore                        # Git ignore rules
 └── README.md                         # This file
 ```
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - **Conda** (Miniconda or Anaconda) - [Download](https://docs.conda.io/en/latest/miniconda.html)
@@ -72,32 +71,26 @@ conda activate green_path
 cd scripts
 python network_extractor.py
 ```
-⏱️ Takes 3-5 minutes
+Takes 3-5 minutes
 
 **Step 4: Add Pollution Weights**
 ```bash
 python add_pollution_weights.py
 ```
-⏱️ Takes ~30 seconds
+Takes ~30 seconds
 
 **Step 5: Start Server**
 ```bash
-cd ..
-python run_server.py
-```
-Or manually:
-```bash
-cd src
+cd ../src
 python app.py
 ```
 
 **Step 6: Open Web Interface**
-- Browser will open automatically, or
 - Manually open `web/index.html` in your browser
 
 ---
 
-## 🎮 Usage
+## Usage
 
 ### Interactive Map
 1. **Click** on the map to set **Start Point**
@@ -106,20 +99,19 @@ python app.py
 4. View comparison in the stats panel
 
 ### Controls (Hamburger Menu)
-- 🌓 **Dark Mode** - Toggle neon visualization
-- 👁️ **Route Display** - Show/hide fastest/greenest routes
-- 🎬 **Animation** - Visualize A* algorithm exploration
-- 🔄 **Reset** - Clear map and start over
+- **Dark Mode** - Toggle neon visualization
+- **Route Display** - Show/hide fastest/greenest routes
+- **Animation** - Visualize A* algorithm exploration
+- **Reset** - Clear map and start over
 
 ### Animation Features
 - See A* algorithm explore the graph in real-time
-- Edges fade as they age (depth effect in dark mode)
 - One-by-one animation (time route → pollution route)
 - Replay anytime
 
 ---
 
-## 📊 How It Works
+## How It Works
 
 ### 1. Road Network Extraction
 Uses `osmnx` to download real Jakarta road data from OpenStreetMap.
@@ -130,25 +122,26 @@ pollution_score = distance × pollution_multiplier × intersection_penalty
 ```
 
 **Pollution Multipliers by Road Type:**
-- Residential: 1.8× (stop-and-go traffic)
-- Secondary: 1.5× (moderate traffic)
-- Primary: 1.3× (traffic lights)
-- Highways: 1.0× (free-flowing)
+- Residential: 2.5× (stop-and-go traffic)
+- Secondary: 1.8× (moderate traffic)
+- Primary: 1.6× (traffic lights)
+- Motorway: 1.0× (free-flowing)
+- Etc.
 
 **Additional Factors:**
 - Intersections: +10% (stop-and-go increases emissions)
-- Speed limits affect time calculation
+- Assumed Average speeds affect time calculation
 
 ### 3. A* Pathfinding Algorithm
 Runs twice with different cost functions:
 
 **Time Route (Fastest):**
-- Cost = travel time (distance ÷ speed limit)
-- Heuristic = straight-line distance ÷ max speed
+- Cost = travel time (distance ÷ average assumed speed)
+- Heuristic = straight-line distance ÷ max speed (80km/h)
 
 **Pollution Route (Greenest):**
 - Cost = pollution score
-- Heuristic = straight-line distance × min pollution factor
+- Heuristic = straight-line distance × min pollution factor (1.0)
 
 ### 4. Results Comparison
 Shows:
@@ -158,7 +151,7 @@ Shows:
 
 ---
 
-## 🧪 Technical Details
+## Technical Details
 
 ### Technologies
 - **Backend:** Flask (Python 3.11)
@@ -186,14 +179,14 @@ Returns: JSON with both routes, stats, and explored nodes
 
 ---
 
-## 🎨 Customization
+## Customization
 
 ### Change Area Size
 In `scripts/network_extractor.py`:
 ```python
-place_name = "Jakarta, Indonesia"  # Large area
+area_size = large #(Jakarta, Indonesia)
 # OR
-place_name = "Central Jakarta, Indonesia"  # Small area
+area_size = small #(Central Jakarta, Jakarta, Indonesia) for lighter load on memory
 ```
 
 ### Adjust Pollution Factors
@@ -207,22 +200,15 @@ POLLUTION_FACTORS = {
 ```
 
 ### Animation Speed
-In `web/index.html` (or `script.js`):
+In `web/script.js`:
 ```javascript
-await new Promise(resolve => setTimeout(resolve, 2));
-//                                              ↑ Change this (milliseconds)
-```
-
-### Layer Opacity
-In `web/index.html`:
-```javascript
-const opacity = isDarkMode ? (1 - age * 0.7) : (1 - age * 0.5);
-//                                    ↑ Fade rate        ↑ Fade rate
+const targetAnimationSpeed = 888;
+//                            ↑ Change this
 ```
 
 ---
 
-## 🛠️ Environment Management
+## Environment Management
 
 ### Useful Commands
 ```bash
@@ -247,7 +233,7 @@ conda env list
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### "Conda not found"
 - Install Miniconda: https://docs.conda.io/en/latest/miniconda.html
@@ -287,7 +273,7 @@ python app.py
 
 ---
 
-## 📚 Dependencies
+## Dependencies
 
 ### Core Libraries
 - `osmnx` - Road network extraction
@@ -310,7 +296,7 @@ Full list in `environment.yml`
 
 ---
 
-## 🎓 Educational Value
+## Educational Value
 
 This project demonstrates:
 - **Graph Algorithms:** A* with custom heuristics
@@ -322,26 +308,14 @@ This project demonstrates:
 
 ---
 
-## 🔮 Future Enhancements
 
-- [ ] Custom start/end point input
-- [ ] Real-time traffic data integration
-- [ ] Multiple alternative routes
-- [ ] CO2 emissions calculator
-- [ ] Public transport comparison
-- [ ] Mobile app version
-- [ ] Route sharing functionality
-- [ ] Historical route analytics
+## License
+
+This is a college project for Artificial Intelligence Class in BINUS University. Free to use and modify for educational purposes.
 
 ---
 
-## 📝 License
-
-This is a college project. Free to use and modify for educational purposes.
-
----
-
-## 🙏 Credits
+## Credits
 
 - **OpenStreetMap** - Road network data
 - **OSMnx** - Network extraction library
@@ -351,25 +325,20 @@ This is a college project. Free to use and modify for educational purposes.
 
 ---
 
-## 👥 Contributors
+## Contributors
 
-- Your Name - College Project
-- Course: AI / Data Science
+- Kenneth Raymond
+- Richson Limec
+- Jonathan Gho
+- Project: Assurance of Learning
+- Course: AI
+- University: Bina Nusantara University
 - Semester: 3
 
 ---
 
-## 📧 Support
+## Support
 
-### Quick Help
-```bash
-# Check system status
-python test_system.py  # (if you create this)
-
-# Or check manually
-conda activate green_path
-python -c "import osmnx; print('✅ Ready!')"
-```
 
 ### Common Workflows
 
@@ -380,14 +349,14 @@ conda activate green_path
 cd scripts
 python network_extractor.py
 python add_pollution_weights.py
-cd ..
-python run_server.py
+cd ../src
+python app.py
 ```
 
 **Daily Use:**
 ```bash
 conda activate green_path
-python run_server.py
+python app.py
 ```
 
 **Clean Restart:**
@@ -405,7 +374,7 @@ python add_pollution_weights.py
 
 ---
 
-**Created for College AI Project**  
-**Focus:** Urban pollution and transportation optimization  
+**Created for Assurance of Learning - Artificial Intelligence Project**  
+**Focus:** Transportation Emissions in Major Cities
 **Environment:** `green_path` conda environment  
 **Python Version:** 3.11

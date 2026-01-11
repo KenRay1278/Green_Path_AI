@@ -39,7 +39,7 @@ POLLUTION_FACTORS = {
     'default': 1.8
 }
 
-# Assume speeds: motorway=80km/h, primary=50km/h, residential=30km/h
+# Assume avg speeds
 speed_limits_kmh = {
     'living_street': 10, #gang (jalan tikus)
     'busway': 1, #illegal routing

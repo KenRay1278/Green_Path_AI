@@ -205,7 +205,7 @@ function displayStats() {
             <span class="stat-value">${timeStats.time_minutes.toFixed(1)} min</span>
         </div>
         <div class="stat-item">
-            <span class="stat-label">Pollution</span>
+            <span class="stat-label">Pollution Score</span>
             <span class="stat-value">${timeStats.pollution_score.toFixed(0)}</span>
         </div>
     `;
@@ -220,7 +220,7 @@ function displayStats() {
             <span class="stat-value">${pollutionStats.time_minutes.toFixed(1)} min</span>
         </div>
         <div class="stat-item">
-            <span class="stat-label">Pollution</span>
+            <span class="stat-label">Pollution Score</span>
             <span class="stat-value">${pollutionStats.pollution_score.toFixed(0)}</span>
         </div>
     `;
