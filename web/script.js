@@ -147,7 +147,6 @@ async function animateExploration(color, type) {
         //     radius: isDarkMode ? 3 : 2,
         //     color: color,
         //     fillColor: color,
-        //     fillOpacity: opacity,
         //     weight: 0
         // }).addTo(exploredLayer);
         L.polyline([parentCoord, childCoord], {
