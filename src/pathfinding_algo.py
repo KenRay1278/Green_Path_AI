@@ -270,7 +270,7 @@ if __name__ == "__main__":
         # Find sample route
         print("\n\tFinding sample start and end points...")
         # start_node, end_node = find_sample_route(G)
-        start_node, end_node, _= hunt_for_best_scenario(G, 60)
+        start_node, end_node, _= hunt_for_best_scenario(G, 120)
         
         start_coords = (G.nodes[start_node]['y'], G.nodes[start_node]['x'])
         end_coords = (G.nodes[end_node]['y'], G.nodes[end_node]['x'])
