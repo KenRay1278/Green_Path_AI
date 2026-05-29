@@ -77,7 +77,7 @@ async function getRoutes(start, end) {
     document.getElementById('statsCard').classList.remove('show');
     
     try {
-        const url = `http://localhost:5000/get_route?start_lat=${start.lat}&start_lon=${start.lng}&end_lat=${end.lat}&end_lon=${end.lng}`;
+        const url = `/get_route?start_lat=${start.lat}&start_lon=${start.lng}&end_lat=${end.lat}&end_lon=${end.lng}`;
         const response = await fetch(url);
         
         if (!response.ok) throw new Error('API Error');

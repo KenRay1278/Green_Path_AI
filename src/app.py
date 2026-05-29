@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory, abort
 from flask_cors import CORS
 import pickle
 import osmnx as ox
@@ -6,6 +6,7 @@ import os
 from pathfinding_algo import astar_pathfinding, calculate_route_stats
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+WEB_DIR = os.path.join(BASE_DIR, '../web')
 PROCESSED_DATA_DIR = os.path.join(BASE_DIR, '../data/processed')
 INPUT_FILENAME = 'jakarta_network_processed.pkl'
 
@@ -69,6 +70,22 @@ def get_route():
     
     return jsonify(response)
 
+@app.route('/')
+def landing():
+    return send_from_directory(WEB_DIR, 'index.html')
+
+@app.route('/app')
+def map_app():
+    return send_from_directory(WEB_DIR, 'app.html')
+
+@app.route('/<path:filename>')
+def web_static(filename):
+    if '..' in filename or filename == 'get_route':
+        abort(404)
+    return send_from_directory(WEB_DIR, filename)
+
 if __name__ == '__main__':
-    print("!Server running on http://localhost:5000!")
+    print("Server running on http://localhost:5000/")
+    print("  Landing: http://localhost:5000/")
+    print("  Map app: http://localhost:5000/app")
     app.run(debug=False, port=5000)

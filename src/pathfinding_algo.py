@@ -323,7 +323,7 @@ if __name__ == "__main__":
             print("\n" + "\t" + "=" * 32)
             print("\tALL STEPS COMPLETE AND VERIFIED!")
             print("\t" + "=" * 32)
-            print("\n\tNext: Run server 'python app.py' and open index.html")
+            print("\n\tNext: Run server 'python app.py' and open http://localhost:5000/")
         
     except FileNotFoundError:
         print("\tError: jakarta_network_processed.pkl not found!")

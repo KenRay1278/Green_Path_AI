@@ -30,9 +30,11 @@ jakarta_pathfinding_ai/
 │       └── jakarta_network_processed.pkl
 │
 ├── web/                              # Frontend
-│   ├── index.html                    # Main interface
-│   ├── style.css                     # [Optional] Styles
-│   └── script.js                     # [Optional] Scripts
+│   ├── index.html                    # Landing page
+│   ├── app.html                      # Interactive map
+│   ├── landing.css                   # Landing page styles
+│   ├── style.css                     # Map app styles
+│   └── script.js                     # Map app logic
 │
 ├── scripts/                          # Setup & processing scripts
 │   ├── network_extractor.py          # Download OSM data
@@ -86,7 +88,8 @@ python app.py
 ```
 
 **Step 6: Open Web Interface**
-- Manually open `web/index.html` in your browser
+- Open http://localhost:5000/ in your browser (landing page)
+- Use **Try the demo** or http://localhost:5000/app for the map
 
 ---
 

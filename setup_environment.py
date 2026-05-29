@@ -138,7 +138,7 @@ def print_next_steps():
     print("   cd ../src")
     print("   python app.py\n")
     print("5️⃣  Open web interface:")
-    print("   Open web/index.html in your browser\n")
+    print("   Open http://localhost:5000/ in your browser\n")
     
     print("=" * 70)
     print("\n💡 TIP: Always activate the environment before running scripts!")
