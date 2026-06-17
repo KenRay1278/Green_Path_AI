@@ -84,6 +84,7 @@ logs/
 *.swo
 temp/
 tmp/
+agent/
 
 #BUILD & DISTRIBUTION
 build/

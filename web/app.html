@@ -54,8 +54,8 @@
                 </div>
 
                 <div class="algorithm-note">
-                    A* compares the cost already travelled with an estimated cost to the goal.
-                    GreenPath AI runs it twice: once for time, once for estimated PM mass.
+                    Drop two pins inside the highlighted area. Use Fastest, Greenest, or Compare
+                    to switch between time-first and lower-emission route views.
                 </div>
             </div>
         </aside>
@@ -143,6 +143,7 @@
         </div>
 
         <section class="stats-card glass-panel" id="statsCard" aria-live="polite">
+            <button class="stats-close" onclick="closeStatsCard()" aria-label="Close route details" type="button">×</button>
             <article class="stat-box fastest" id="fastestCard">
                 <span class="stat-heading">Fastest</span>
                 <div id="fastestStats" class="stat-body">Waiting for route.</div>

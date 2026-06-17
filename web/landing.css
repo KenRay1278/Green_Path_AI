@@ -5,10 +5,10 @@
     --ink: #102033;
     --muted: #526173;
     --line: rgba(30, 64, 175, 0.16);
-    --blue: #4285f4;
-    --blue-strong: #1a73e8;
-    --green: #34a853;
-    --green-strong: #188038;
+    --blue: #007ACC;
+    --blue-strong: #0069b8;
+    --green: #25D366;
+    --green-strong: #128C4A;
     --amber: #f59e0b;
 }
 
@@ -32,20 +32,17 @@ a {
 }
 
 .landing-header {
-    position: fixed;
-    top: 16px;
-    left: 16px;
-    right: 16px;
+    position: sticky;
+    top: 0;
     z-index: 30;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 18px;
-    padding: 10px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.9);
-    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
     backdrop-filter: blur(10px);
 }
 
@@ -60,7 +57,7 @@ a {
 }
 
 .landing-logo {
-    padding: 0 16px;
+    padding: 0 12px;
     color: var(--ink);
     background: rgba(37, 99, 235, 0.08);
 }
@@ -72,7 +69,7 @@ a {
 }
 
 .landing-nav a {
-    padding: 0 14px;
+    padding: 0 12px;
     color: var(--muted);
     font-size: 0.9rem;
 }
@@ -94,10 +91,10 @@ main {
 
 .hero {
     position: relative;
-    min-height: 92vh;
+    min-height: calc(100vh - 59px);
     display: flex;
     align-items: flex-end;
-    padding: 124px 16px 56px;
+    padding: 70px clamp(14px, 2vw, 28px) 54px;
     background: #eef3f8;
 }
 
@@ -107,8 +104,8 @@ main {
     inset: 0;
     z-index: 1;
     background:
-        linear-gradient(90deg, rgba(248, 250, 252, 0.98) 0%, rgba(248, 250, 252, 0.84) 34%, rgba(248, 250, 252, 0.28) 68%, rgba(248, 250, 252, 0.1) 100%),
-        linear-gradient(0deg, rgba(248, 250, 252, 0.94) 0%, rgba(248, 250, 252, 0.2) 36%, rgba(248, 250, 252, 0.1) 100%);
+        linear-gradient(90deg, rgba(248, 250, 252, 0.9) 0%, rgba(248, 250, 252, 0.72) 24%, rgba(248, 250, 252, 0.26) 48%, rgba(248, 250, 252, 0.04) 72%),
+        linear-gradient(0deg, rgba(248, 250, 252, 0.82) 0%, rgba(248, 250, 252, 0.24) 36%, rgba(248, 250, 252, 0.06) 100%);
     pointer-events: none;
 }
 
@@ -117,6 +114,27 @@ main {
     inset: 0;
     overflow: hidden;
     background: #e9eff5;
+}
+
+.hero-video {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center center;
+    opacity: 0.78;
+    filter: saturate(1.05) contrast(0.96);
+}
+
+.hero-demo.has-video .demo-map-grid,
+.hero-demo.has-video .demo-area,
+.hero-demo.has-video .demo-road,
+.hero-demo.has-video .demo-route,
+.hero-demo.has-video .demo-frontier,
+.hero-demo.has-video .demo-pin {
+    display: none;
 }
 
 .demo-map-grid {
@@ -260,25 +278,11 @@ main {
     background: var(--green);
 }
 
-.demo-video-label {
-    position: absolute;
-    right: 22px;
-    bottom: 22px;
-    z-index: 3;
-    padding: 8px 12px;
-    border: 1px solid rgba(15, 23, 42, 0.12);
-    border-radius: 8px;
-    color: var(--muted);
-    background: rgba(255, 255, 255, 0.9);
-    font-size: 0.78rem;
-    font-weight: 900;
-}
-
 .hero-copy {
     position: relative;
     z-index: 2;
     width: min(680px, 100%);
-    margin-left: max(0px, calc((100vw - 1120px) / 2));
+    margin-left: 0;
     padding-bottom: 8px;
 }
 
@@ -322,6 +326,7 @@ main {
     border-radius: 8px;
     text-decoration: none;
     font-weight: 900;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
 }
 
 .primary-action {
@@ -336,11 +341,36 @@ main {
     border: 1px solid #8ab4f8;
 }
 
-.overview-section,
-.media-section {
+.primary-action:hover,
+.secondary-action:hover,
+.landing-nav .nav-cta:hover {
+    transform: translateY(-2px);
+}
+
+.primary-action:hover {
+    color: #ffffff;
+    background: #0069b8;
+    box-shadow: 0 14px 28px rgba(0, 122, 204, 0.28);
+}
+
+.secondary-action:hover,
+.landing-nav .nav-cta:hover {
+    color: #075985;
+    background: #eaf4ff;
+    border-color: #7bc6ff;
+}
+
+.primary-action:active,
+.secondary-action:active,
+.landing-nav .nav-cta:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.overview-section {
     width: min(1120px, calc(100vw - 32px));
     margin: 0 auto;
     padding: 72px 0;
+    scroll-margin-top: 96px;
 }
 
 .section-heading {
@@ -405,28 +435,6 @@ main {
     border-top: 4px solid var(--amber);
 }
 
-.media-section {
-    padding-top: 16px;
-}
-
-.media-strip {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 10px;
-}
-
-.media-strip span {
-    min-height: 72px;
-    display: grid;
-    place-items: center;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    color: var(--ink);
-    background: var(--surface);
-    font-weight: 950;
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
-}
-
 .landing-footer {
     padding: 28px 20px;
     color: var(--muted);
@@ -472,21 +480,23 @@ main {
 
 @media (max-width: 860px) {
     .landing-header {
-        align-items: stretch;
-    }
-
-    .landing-nav a:not(.nav-cta) {
-        display: none;
+        padding: 8px 10px;
     }
 
     .hero {
-        min-height: 88vh;
-        padding-top: 116px;
+        min-height: calc(100vh - 55px);
+        padding: 58px 14px 44px;
     }
 
     .hero::after {
         background:
-            linear-gradient(0deg, rgba(248, 250, 252, 0.98) 0%, rgba(248, 250, 252, 0.78) 52%, rgba(248, 250, 252, 0.24) 100%);
+            linear-gradient(90deg, rgba(248, 250, 252, 0.88) 0%, rgba(248, 250, 252, 0.62) 42%, rgba(248, 250, 252, 0.14) 76%),
+            linear-gradient(0deg, rgba(248, 250, 252, 0.88) 0%, rgba(248, 250, 252, 0.34) 55%, rgba(248, 250, 252, 0.08) 100%);
+    }
+
+    .hero-video {
+        object-position: center top;
+        opacity: 0.72;
     }
 
     .hero h1 {
@@ -543,17 +553,14 @@ main {
         top: 38%;
     }
 
-    .feature-grid,
-    .media-strip {
+    .feature-grid {
         grid-template-columns: 1fr;
     }
 }
 
 @media (max-width: 560px) {
     .landing-header {
-        left: 10px;
-        right: 10px;
-        top: 10px;
+        padding: 8px;
     }
 
     .landing-logo,
@@ -564,8 +571,8 @@ main {
     }
 
     .hero {
-        min-height: 90vh;
-        padding: 108px 12px 42px;
+        min-height: calc(100vh - 53px);
+        padding: 42px 10px 34px;
     }
 
     .hero h1 {
@@ -576,16 +583,10 @@ main {
         width: 100%;
     }
 
-    .demo-video-label {
-        left: 12px;
-        right: auto;
-        bottom: 12px;
-    }
-
-    .overview-section,
-    .media-section {
+    .overview-section {
         width: calc(100vw - 24px);
         padding: 48px 0;
+        scroll-margin-top: 82px;
     }
 
     .section-heading h2 {

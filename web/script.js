@@ -20,6 +20,7 @@ let soundEnabled = true;
 let soundVolume = 0.7;
 let animationSpeed = "normal";
 let audioContext = null;
+let statsManuallyClosed = false;
 
 const jakartaBounds = [
     [-6.380, 106.680],
@@ -27,19 +28,19 @@ const jakartaBounds = [
 ];
 
 const colors = {
-    fastest: "#4285f4",
-    greenest: "#34a853",
-    overlapBlue: "#4285f4",
-    overlapGreen: "#34a853",
-    mutedBlue: "#5f7fa8",
-    mutedGreen: "#5a8f6d",
+    fastest: "#007ACC",
+    greenest: "#25D366",
+    overlapBlue: "#007ACC",
+    overlapGreen: "#25D366",
+    mutedBlue: "#5f8fc2",
+    mutedGreen: "#65b887",
 };
 
 function initMap() {
     map = L.map("map", {
         center: [-6.2088, 106.8456],
         zoom: 11,
-        minZoom: 10,
+        minZoom: 11,
         maxZoom: 17,
         maxBounds: jakartaBounds,
         maxBoundsViscosity: 1.0,
@@ -122,7 +123,8 @@ function drawMapContext(context) {
     boundaryLayer.clearLayers();
 
     if (Array.isArray(context.mask) && context.mask.length >= 2) {
-        L.polygon(context.mask, {
+        const maskPolygon = buildViewportMask(context.mask[1] || context.boundary, context.bounds) || context.mask;
+        L.polygon(maskPolygon, {
             color: "transparent",
             weight: 0,
             fillColor: isDarkMode ? "#020617" : "#f8fafc",
@@ -151,12 +153,29 @@ function drawMapContext(context) {
             interactive: false,
         }).addTo(boundaryLayer);
 
-        map.fitBounds(context.boundary, { padding: [42, 42], maxZoom: 12 });
+        map.fitBounds(context.boundary, { padding: [44, 44], maxZoom: 12 });
     }
 
     if (Array.isArray(context.bounds) && context.bounds.length === 2) {
         map.setMaxBounds(context.bounds);
     }
+}
+
+function buildViewportMask(boundary, bounds) {
+    if (!Array.isArray(boundary) || boundary.length < 3 || !Array.isArray(bounds) || bounds.length !== 2) {
+        return null;
+    }
+    const [[south, west], [north, east]] = bounds;
+    const latPad = Math.max((north - south) * 2.4, 0.12);
+    const lngPad = Math.max((east - west) * 2.4, 0.12);
+    const outer = [
+        [south - latPad, west - lngPad],
+        [south - latPad, east + lngPad],
+        [north + latPad, east + lngPad],
+        [north + latPad, west - lngPad],
+        [south - latPad, west - lngPad],
+    ];
+    return [outer, boundary];
 }
 
 function showToast(message, tone = "info") {
@@ -188,6 +207,12 @@ function makeRouteIcon(type) {
 
 function onMapClick(e) {
     ensureAudioContext();
+    if (!isInsidePlayableArea(e.latlng)) {
+        setStatus("Choose a point inside the Greater Jakarta route area.");
+        showToast("Choose a point inside the Greater Jakarta route area.", "error");
+        return;
+    }
+
     if (!startMarker) {
         startMarker = L.marker(e.latlng, { icon: makeRouteIcon("start") }).addTo(markersLayer);
         startMarker.bindTooltip("Start point", { direction: "top", offset: [0, -26] }).openTooltip();
@@ -210,6 +235,28 @@ function onMapClick(e) {
     onMapClick(e);
 }
 
+function isInsidePlayableArea(latlng) {
+    if (!mapContext || !Array.isArray(mapContext.boundary) || mapContext.boundary.length < 3) {
+        return true;
+    }
+    return isPointInPolygon([latlng.lat, latlng.lng], mapContext.boundary);
+}
+
+function isPointInPolygon(point, polygon) {
+    const [lat, lng] = point;
+    let inside = false;
+
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i, i += 1) {
+        const [latI, lngI] = polygon[i];
+        const [latJ, lngJ] = polygon[j];
+        const intersects = ((lngI > lng) !== (lngJ > lng))
+            && (lat < ((latJ - latI) * (lng - lngI) / ((lngJ - lngI) || Number.EPSILON) + latI));
+        if (intersects) inside = !inside;
+    }
+
+    return inside;
+}
+
 async function getRoutes(start, end) {
     setLoading(true);
     document.getElementById("statsCard").classList.remove("show");
@@ -227,6 +274,7 @@ async function getRoutes(start, end) {
         }
 
         routesData = await response.json();
+        statsManuallyClosed = false;
 
         if (document.getElementById("enableAnimation").checked) {
             await runAnimation();
@@ -290,7 +338,7 @@ async function animateExploration(edges, color, routeNodeKeys) {
             L.polyline(classified.faint, {
                 color,
                 weight: isMobile ? 1 : 1.5,
-                opacity: 0.1,
+                opacity: 0.16,
                 interactive: false,
             }).addTo(visitedLayer);
         }
@@ -306,7 +354,7 @@ async function animateExploration(edges, color, routeNodeKeys) {
             L.polyline(frontierFaint, {
                 color: color === colors.mutedGreen ? colors.greenest : colors.fastest,
                 weight: isMobile ? 2 : 3,
-                opacity: 0.45,
+                opacity: 0.5,
                 interactive: false,
             }).addTo(frontierLayer);
         }
@@ -315,7 +363,7 @@ async function animateExploration(edges, color, routeNodeKeys) {
             L.polyline(frontierHot, {
                 color: "#f8fafc",
                 weight: isMobile ? 2.5 : 3.5,
-                opacity: 0.58,
+                opacity: 0.62,
                 interactive: false,
             }).addTo(frontierLayer);
         }
@@ -330,8 +378,8 @@ async function animateExploration(edges, color, routeNodeKeys) {
 function getAnimationConfig() {
     const configs = {
         slow: {
-            maxEdges: 1200,
-            mobileMaxEdges: 620,
+            maxEdges: 2200,
+            mobileMaxEdges: 900,
             batchSize: 24,
             mobileBatchSize: 16,
             routeFramesMax: 64,
@@ -339,19 +387,19 @@ function getAnimationConfig() {
             frameDelay: 24,
         },
         normal: {
-            maxEdges: 1000,
-            mobileMaxEdges: 520,
-            batchSize: 38,
-            mobileBatchSize: 24,
+            maxEdges: 1850,
+            mobileMaxEdges: 760,
+            batchSize: 32,
+            mobileBatchSize: 22,
             routeFramesMax: 46,
             routeStepDivisor: 4,
             frameDelay: 8,
         },
         fast: {
-            maxEdges: 820,
-            mobileMaxEdges: 420,
-            batchSize: 58,
-            mobileBatchSize: 36,
+            maxEdges: 1400,
+            mobileMaxEdges: 620,
+            batchSize: 52,
+            mobileBatchSize: 34,
             routeFramesMax: 28,
             routeStepDivisor: 6,
             frameDelay: 0,
@@ -408,7 +456,7 @@ function fadeAnimationLayer() {
     frontierLayer.clearLayers();
     visitedLayer.eachLayer((layer) => {
         if (layer.setStyle) {
-            layer.setStyle({ opacity: 0.045 });
+            layer.setStyle({ opacity: 0.12 });
         }
     });
     animationLayer.eachLayer((layer) => {
@@ -426,6 +474,7 @@ function clearAnimationLayers() {
 
 function setRouteMode(mode) {
     routeMode = mode;
+    statsManuallyClosed = false;
     document.querySelectorAll("[data-route-mode]").forEach((button) => {
         button.classList.toggle("active", button.dataset.routeMode === mode);
     });
@@ -637,12 +686,12 @@ function displayStats() {
     document.getElementById("comparisonStats").innerHTML = statsMarkup([
         ["Extra time", `${timeDiff >= 0 ? "+" : ""}${timeDiff.toFixed(1)} min`],
         ["PM2.5 saved", `${formatMass(pollutionDiff)} (${pollutionReduction.toFixed(1)}%)`],
-        ["Mode", modeLabel(routeMode)],
     ]);
 
-    document.getElementById("fastestCard").classList.toggle("dimmed", routeMode === "greenest");
-    document.getElementById("greenestCard").classList.toggle("dimmed", routeMode === "fastest");
-    document.getElementById("comparisonCard").classList.toggle("dimmed", routeMode !== "compare");
+    document.getElementById("fastestCard").classList.toggle("hidden", routeMode === "greenest");
+    document.getElementById("greenestCard").classList.toggle("hidden", routeMode === "fastest");
+    document.getElementById("comparisonCard").classList.toggle("hidden", routeMode !== "compare");
+    document.getElementById("statsCard").dataset.mode = routeMode;
     applyStatsVisibility();
 }
 
@@ -763,13 +812,19 @@ function toggleLegend() {
 }
 
 function toggleRouteComparison() {
+    statsManuallyClosed = false;
     applyStatsVisibility();
 }
 
 function applyStatsVisibility() {
     const statsCard = document.getElementById("statsCard");
-    const shouldShow = Boolean(routesData && document.getElementById("showComparison").checked);
+    const shouldShow = Boolean(routesData && document.getElementById("showComparison").checked && !statsManuallyClosed);
     statsCard.classList.toggle("show", shouldShow);
+}
+
+function closeStatsCard() {
+    statsManuallyClosed = true;
+    applyStatsVisibility();
 }
 
 function toggleHudPanel() {
@@ -814,7 +869,7 @@ function playSuccessSound() {
     oscillator.frequency.setValueAtTime(520, audioContext.currentTime);
     oscillator.frequency.exponentialRampToValueAtTime(840, audioContext.currentTime + 0.16);
     gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.08 * soundVolume, audioContext.currentTime + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.13 * soundVolume, audioContext.currentTime + 0.03);
     gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.22);
     oscillator.connect(gain).connect(audioContext.destination);
     oscillator.start();
@@ -831,7 +886,7 @@ function playPinSound(type) {
     oscillator.type = "triangle";
     oscillator.frequency.setValueAtTime(type === "start" ? 420 : 620, audioContext.currentTime);
     gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.065 * soundVolume, audioContext.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.11 * soundVolume, audioContext.currentTime + 0.02);
     gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.14);
     oscillator.connect(gain).connect(audioContext.destination);
     oscillator.start();
@@ -849,7 +904,7 @@ function playSearchPulse() {
     oscillator.frequency.setValueAtTime(160, audioContext.currentTime);
     oscillator.frequency.exponentialRampToValueAtTime(260, audioContext.currentTime + 0.08);
     gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.025 * soundVolume, audioContext.currentTime + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.05 * soundVolume, audioContext.currentTime + 0.015);
     gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.1);
     oscillator.connect(gain).connect(audioContext.destination);
     oscillator.start();
@@ -862,8 +917,10 @@ async function replayAnimation() {
         return;
     }
 
+    statsManuallyClosed = false;
     await runAnimation();
     displayRoutes();
+    displayStats();
 }
 
 function resetMap() {
@@ -871,6 +928,7 @@ function resetMap() {
     endMarker = null;
     routesData = null;
     animationRunning = false;
+    statsManuallyClosed = false;
     markersLayer.clearLayers();
     routeLayer.clearLayers();
     routeLabelLayer.clearLayers();

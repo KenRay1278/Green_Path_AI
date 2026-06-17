@@ -11,15 +11,16 @@
     <header class="landing-header">
         <a href="/" class="landing-logo">GreenPath AI</a>
         <nav class="landing-nav" aria-label="Primary navigation">
-            <a href="#overview">Overview</a>
-            <a href="#media">Media</a>
             <a class="nav-cta" href="/app">Open map</a>
         </nav>
     </header>
 
     <main>
         <section class="hero" aria-label="GreenPath AI introduction">
-            <div class="hero-demo" aria-label="Looping route demo placeholder">
+            <div class="hero-demo has-video" aria-label="Looping route demo preview">
+                <video class="hero-video" autoplay muted loop playsinline preload="metadata">
+                    <source src="assets/video/mulmed_video.webm" type="video/webm">
+                </video>
                 <div class="demo-map-grid"></div>
                 <div class="demo-area"></div>
                 <div class="demo-road road-a"></div>
@@ -31,7 +32,6 @@
                 <div class="demo-frontier frontier-two"></div>
                 <div class="demo-pin start"><span>Start</span></div>
                 <div class="demo-pin end"><span>End</span></div>
-                <div class="demo-video-label">Looping demo placeholder</div>
             </div>
 
             <div class="hero-copy">
@@ -67,34 +67,16 @@
                 </article>
                 <article class="feature-card compare">
                     <span>03</span>
-                    <h3>Compare</h3>
+                    <h3>Compare Routes</h3>
                     <p>Shows shared segments, route labels, animation, and result differences.</p>
                 </article>
-            </div>
-        </section>
-
-        <section class="media-section" id="media">
-            <div class="section-heading">
-                <p class="eyebrow">Multimedia elements</p>
-                <h2>Designed around the assignment requirements without feeling like a checklist.</h2>
-            </div>
-
-            <div class="media-strip">
-                <span>Text</span>
-                <span>Picture</span>
-                <span>Audio</span>
-                <span>Video</span>
-                <span>Animation</span>
             </div>
         </section>
     </main>
 
     <footer class="landing-footer">
-        <p>GreenPath AI - Multimedia Systems project</p>
-        <p>
-            Road data © <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a>
-            contributors. Map tiles © CARTO. PM values are simplified route-comparison estimates, not ambient concentration.
-        </p>
+        <p>A Binus University project - Multimedia Systems x Artificial Intelligence</p>
+        <p>Built with Flask, Leaflet, Bootstrap, OpenStreetMap, OSMnx, NetworkX, and CARTO map tiles.</p>
     </footer>
 </body>
 </html>
