@@ -1,6 +1,6 @@
 # GreenPath AI
 
-GreenPath AI is a Multimedia Systems route visualizer for Greater Jakarta. It compares
+GreenPath AI is a map route visualizer. It compares
 the fastest route and the greenest route on a real OpenStreetMap road graph using A*
 pathfinding.
 
