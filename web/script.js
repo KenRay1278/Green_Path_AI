@@ -1,282 +1,867 @@
-let map, timeLayer, pollutionLayer, timeAnimationLayer, pollAnimationLayer, markersLayer;
-let startMarker = null, endMarker = null;
+let map;
+let lightTileLayer;
+let darkTileLayer;
+let routeLayer;
+let animationLayer;
+let visitedLayer;
+let frontierLayer;
+let markersLayer;
+let boundaryLayer;
+let routeLabelLayer;
+let routeRenderer;
+let startMarker = null;
+let endMarker = null;
 let routesData = null;
+let mapContext = null;
 let animationRunning = false;
 let isDarkMode = false;
-let lightTileLayer, darkTileLayer;
+let routeMode = "compare";
+let soundEnabled = true;
+let soundVolume = 0.7;
+let animationSpeed = "normal";
+let audioContext = null;
 
-// Jakarta bounds
 const jakartaBounds = [
-    [-6.368997, 106.674902], // Southwest
-    [-6.082293, 106.998752]   // Northeast
+    [-6.380, 106.680],
+    [-5.950, 106.980],
 ];
 
-function showToast(message, color = null) {
-    const toast = document.getElementById('toast-notification');
-    toast.textContent = message;
-    
-    // Optional: match text color to the route color
-    if (color) toast.style.color = color;
-    
-    toast.classList.add('show');
-    
-    // Hide automatically after 3 seconds
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, 1000);
-}
+const colors = {
+    fastest: "#4285f4",
+    greenest: "#34a853",
+    overlapBlue: "#4285f4",
+    overlapGreen: "#34a853",
+    mutedBlue: "#5f7fa8",
+    mutedGreen: "#5a8f6d",
+};
 
 function initMap() {
-    map = L.map('map', {
+    map = L.map("map", {
         center: [-6.2088, 106.8456],
-        zoom: 12,
+        zoom: 11,
+        minZoom: 10,
+        maxZoom: 17,
         maxBounds: jakartaBounds,
         maxBoundsViscosity: 1.0,
-        minZoom: 11,
-        maxZoom: 18
+        preferCanvas: true,
+        zoomControl: false,
+        attributionControl: false,
     });
-    
-    // Light tile layer
-    lightTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '© OpenStreetMap contributors',
-        subdomains: 'abcd'
-    }).addTo(map);
-    
-    // Dark tile layer (neon style)
-    darkTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '© OpenStreetMap contributors',
-        subdomains: 'abcd'
+
+    L.control.zoom({ position: "bottomleft" }).addTo(map);
+    routeRenderer = L.svg({ padding: 0.5 });
+
+    lightTileLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+        attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
+        subdomains: "abcd",
     });
-    
-    // Initialize layers
-    timeLayer = L.layerGroup().addTo(map);
-    pollutionLayer = L.layerGroup().addTo(map);
-    timeAnimationLayer = L.layerGroup().addTo(map);
-    pollAnimationLayer = L.layerGroup().addTo(map);
+
+    darkTileLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+        attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
+        subdomains: "abcd",
+    });
+
+    boundaryLayer = L.layerGroup().addTo(map);
+    visitedLayer = L.layerGroup().addTo(map);
+    frontierLayer = L.layerGroup().addTo(map);
+    animationLayer = L.layerGroup().addTo(map);
+    routeLayer = L.layerGroup().addTo(map);
+    routeLabelLayer = L.layerGroup().addTo(map);
     markersLayer = L.layerGroup().addTo(map);
-    
-    map.on('click', onMapClick);
+
+    drawFallbackBoundary();
+    lightTileLayer.addTo(map);
+    loadMapContext();
+    wireControls();
+    map.fitBounds(jakartaBounds, { padding: [28, 28] });
+    map.on("click", onMapClick);
+}
+
+function wireControls() {
+    document.querySelectorAll("[data-route-mode]").forEach((button) => {
+        button.addEventListener("click", () => setRouteMode(button.dataset.routeMode));
+    });
+    document.querySelectorAll("[data-animation-speed]").forEach((button) => {
+        button.addEventListener("click", () => setAnimationSpeed(button.dataset.animationSpeed));
+    });
+    document.getElementById("soundVolume").addEventListener("input", (event) => {
+        soundVolume = Number(event.target.value) / 100;
+        soundEnabled = soundVolume > 0;
+    });
+    document.getElementById("aboutModal").addEventListener("click", (event) => {
+        if (event.target.id === "aboutModal") closeAboutModal();
+    });
+    updateThemeToggle();
+}
+
+async function loadMapContext() {
+    try {
+        const response = await fetch("/api/map-context");
+        if (!response.ok) return;
+        mapContext = await response.json();
+        drawMapContext(mapContext);
+    } catch (error) {
+        console.warn("Map context unavailable", error);
+    }
+}
+
+function drawFallbackBoundary() {
+    boundaryLayer.clearLayers();
+    L.rectangle(jakartaBounds, {
+        color: "#f59e0b",
+        weight: 2,
+        opacity: 0.75,
+        fillColor: "#f59e0b",
+        fillOpacity: 0.035,
+        dashArray: "8 8",
+        interactive: false,
+    }).addTo(boundaryLayer);
+}
+
+function drawMapContext(context) {
+    boundaryLayer.clearLayers();
+
+    if (Array.isArray(context.mask) && context.mask.length >= 2) {
+        L.polygon(context.mask, {
+            color: "transparent",
+            weight: 0,
+            fillColor: isDarkMode ? "#020617" : "#f8fafc",
+            fillOpacity: isDarkMode ? 0.62 : 0.56,
+            fillRule: "evenodd",
+            interactive: false,
+        }).addTo(boundaryLayer);
+    }
+
+    if (Array.isArray(context.network_lines) && context.network_lines.length) {
+        L.polyline(context.network_lines, {
+            color: isDarkMode ? "#94a3b8" : "#64748b",
+            weight: 1,
+            opacity: isDarkMode ? 0.08 : 0.06,
+            interactive: false,
+        }).addTo(boundaryLayer);
+    }
+
+    if (Array.isArray(context.boundary) && context.boundary.length > 2) {
+        L.polygon(context.boundary, {
+            color: "#64748b",
+            weight: 1.75,
+            opacity: isDarkMode ? 0.62 : 0.56,
+            fillColor: "#64748b",
+            fillOpacity: 0.008,
+            interactive: false,
+        }).addTo(boundaryLayer);
+
+        map.fitBounds(context.boundary, { padding: [42, 42], maxZoom: 12 });
+    }
+
+    if (Array.isArray(context.bounds) && context.bounds.length === 2) {
+        map.setMaxBounds(context.bounds);
+    }
+}
+
+function showToast(message, tone = "info") {
+    const toast = document.getElementById("toast-notification");
+    toast.textContent = message;
+    toast.dataset.tone = tone;
+    toast.classList.add("show");
+
+    window.clearTimeout(showToast.hideTimer);
+    showToast.hideTimer = window.setTimeout(() => {
+        toast.classList.remove("show");
+    }, 2600);
+}
+
+function setStatus(message) {
+    document.getElementById("routeStatus").textContent = message;
+}
+
+function makeRouteIcon(type) {
+    const label = type === "start" ? "Start" : "End";
+    return L.divIcon({
+        html: `<div class="route-marker ${type}"><span>${label}</span></div>`,
+        className: "",
+        iconSize: [76, 34],
+        iconAnchor: [38, 30],
+        popupAnchor: [0, -28],
+    });
 }
 
 function onMapClick(e) {
+    ensureAudioContext();
     if (!startMarker) {
-        startMarker = L.marker(e.latlng).addTo(markersLayer);
-        startMarker.bindPopup("Start Point").openPopup();
-    } else if (!endMarker) {
-        endMarker = L.marker(e.latlng).addTo(markersLayer);
-        endMarker.bindPopup("End Point").openPopup();
-        getRoutes(startMarker.getLatLng(), endMarker.getLatLng());
-    } else {
-        resetMap();
-        onMapClick(e);
+        startMarker = L.marker(e.latlng, { icon: makeRouteIcon("start") }).addTo(markersLayer);
+        startMarker.bindTooltip("Start point", { direction: "top", offset: [0, -26] }).openTooltip();
+        setStatus("Start selected. Now choose a destination.");
+        playPinSound("start");
+        showToast("Start point set");
+        return;
     }
+
+    if (!endMarker) {
+        endMarker = L.marker(e.latlng, { icon: makeRouteIcon("end") }).addTo(markersLayer);
+        endMarker.bindTooltip("Destination", { direction: "top", offset: [0, -26] }).openTooltip();
+        setStatus("Calculating fastest and greenest routes...");
+        playPinSound("end");
+        getRoutes(startMarker.getLatLng(), endMarker.getLatLng());
+        return;
+    }
+
+    resetMap();
+    onMapClick(e);
 }
 
 async function getRoutes(start, end) {
-    document.getElementById('loadingIndicator').classList.add('show');
-    document.getElementById('statsCard').classList.remove('show');
-    
+    setLoading(true);
+    document.getElementById("statsCard").classList.remove("show");
+    routeLayer.clearLayers();
+    routeLabelLayer.clearLayers();
+    clearAnimationLayers();
+
     try {
-        const url = `/get_route?start_lat=${start.lat}&start_lon=${start.lng}&end_lat=${end.lat}&end_lon=${end.lng}`;
+        const url = `/api/route?start_lat=${start.lat}&start_lon=${start.lng}&end_lat=${end.lat}&end_lon=${end.lng}`;
         const response = await fetch(url);
-        
-        if (!response.ok) throw new Error('API Error');
-        
+
+        if (!response.ok) {
+            const errorPayload = await response.json().catch(() => ({}));
+            throw new Error(errorPayload.details || errorPayload.error || "API Error");
+        }
+
         routesData = await response.json();
-        
-        const animationEnabled = document.getElementById('enableAnimation').checked;
-        
-        if (animationEnabled) {
+
+        if (document.getElementById("enableAnimation").checked) {
             await runAnimation();
         }
-        
-        displayRoutes();
+
+        displayRoutes({ fit: true });
         displayStats();
-        
+        playSuccessSound();
+        setStatus("Routes ready. Switch modes or replay the animation.");
+        showToast("Routes calculated", "success");
     } catch (error) {
         console.error(error);
-        alert('Error calculating route. Try points closer to roads.');
+        setStatus("Route calculation failed. Try points closer to major roads.");
+        showToast(error.message || "Error calculating route", "error");
     } finally {
-        document.getElementById('loadingIndicator').classList.remove('show');
+        setLoading(false);
     }
+}
+
+function setLoading(isLoading) {
+    document.getElementById("loadingIndicator").classList.toggle("show", isLoading);
 }
 
 async function runAnimation() {
-    timeAnimationLayer.clearLayers();
-    pollAnimationLayer.clearLayers();
-    timeLayer.clearLayers();
-    pollutionLayer.clearLayers();
-    
-    const animateTime = document.getElementById('animateTime').checked;
-    const animatePollution = document.getElementById('animatePollution').checked;
-    const timeColor = isDarkMode ? '#00d9ff' : '#3b82f6';
-    const pollColor = isDarkMode ? '#00ff88' : '#10b981';
-    animationRunning = true;    
+    if (!routesData || animationRunning) return;
 
-    if (animateTime && routesData.time_route.explored) {
-        await animateExploration('#00d9ff', 'time');
-        showToast("⚡ Fastest Route Found!", timeColor);
-    }
+    animationRunning = true;
+    routeLayer.clearLayers();
+    routeLabelLayer.clearLayers();
+    clearAnimationLayers();
 
-    timeAnimationLayer.eachLayer(l => l.setStyle({ opacity: 0.2 }));
-    L.polyline(routesData.time_route.path, {
-        color: timeColor,
-        weight: 3,
-        opacity: 1,
-    }).addTo(timeLayer);
-    
-    if (animatePollution && routesData.pollution_route.explored) {
-        await animateExploration('#00ff88', 'pollution');
-        showToast("🌱 Greenest Route Found!", pollColor);
+    try {
+        playSearchPulse();
+        const routeNodeKeys = getRouteNodeKeys();
+        if (routeMode !== "greenest") {
+            await animateExploration(routesData.time_route.explored_edges || [], colors.mutedBlue, routeNodeKeys);
+        }
+        if (routeMode !== "fastest") {
+            await animateExploration(routesData.pollution_route.explored_edges || [], colors.mutedGreen, routeNodeKeys);
+        }
+
+        await animateRouteDraw();
+        fadeAnimationLayer();
+    } finally {
+        animationRunning = false;
     }
-    
-    animationRunning = false;
-    timeAnimationLayer.clearLayers();
-    pollAnimationLayer.clearLayers();
-    timeLayer.clearLayers();
 }
 
-async function animateExploration(color, type) {
-    const edges = (type === 'time') ? routesData.time_route.explored_edges : routesData.pollution_route.explored_edges;
-    const layer = (type === 'time') ? timeAnimationLayer : pollAnimationLayer;
-    const targetAnimationSpeed = 888;
-    const timeToAnimate = Math.max(1, Math.ceil(edges.length / targetAnimationSpeed));
-    for (let i = 0; i < edges.length; i ++) {
-        const [parentCoord, childCoord] = edges[i];
-        // const marker = L.circleMarker(explored[i], {
-        //     radius: isDarkMode ? 3 : 2,
-        //     color: color,
-        //     fillColor: color,
-        //     weight: 0
-        // }).addTo(exploredLayer);
-        L.polyline([parentCoord, childCoord], {
-            color: color,
-            weight: 2,
-            opacity: 0.4,
-        }).addTo(layer);
-        
-        if (i % timeToAnimate === 0) { 
-            await new Promise(resolve => setTimeout(resolve, 0)); 
+async function animateExploration(edges, color, routeNodeKeys) {
+    const isMobile = window.innerWidth < 720;
+    const config = getAnimationConfig();
+    const sampledEdges = sampleEdges(edges, isMobile ? config.mobileMaxEdges : config.maxEdges);
+    const batchSize = isMobile ? config.mobileBatchSize : config.batchSize;
+    const frontierWindow = isMobile ? 2 : 3;
+    const recentBatches = [];
+
+    for (let i = 0; i < sampledEdges.length; i += batchSize) {
+        const batch = sampledEdges.slice(i, i + batchSize);
+        const classified = classifyExplorationBatch(batch, routeNodeKeys);
+        if (classified.faint.length) {
+            L.polyline(classified.faint, {
+                color,
+                weight: isMobile ? 1 : 1.5,
+                opacity: 0.1,
+                interactive: false,
+            }).addTo(visitedLayer);
+        }
+
+        recentBatches.push(classified);
+        if (recentBatches.length > frontierWindow) recentBatches.shift();
+
+        frontierLayer.clearLayers();
+        const frontierFaint = recentBatches.flatMap((item) => item.faint);
+        const frontierHot = recentBatches.flatMap((item) => item.hot);
+
+        if (frontierFaint.length) {
+            L.polyline(frontierFaint, {
+                color: color === colors.mutedGreen ? colors.greenest : colors.fastest,
+                weight: isMobile ? 2 : 3,
+                opacity: 0.45,
+                interactive: false,
+            }).addTo(frontierLayer);
+        }
+
+        if (frontierHot.length) {
+            L.polyline(frontierHot, {
+                color: "#f8fafc",
+                weight: isMobile ? 2.5 : 3.5,
+                opacity: 0.58,
+                interactive: false,
+            }).addTo(frontierLayer);
+        }
+
+        if (i % (batchSize * 3) === 0) {
+            playSearchPulse();
+        }
+        await nextFrame(config.frameDelay);
+    }
+}
+
+function getAnimationConfig() {
+    const configs = {
+        slow: {
+            maxEdges: 1200,
+            mobileMaxEdges: 620,
+            batchSize: 24,
+            mobileBatchSize: 16,
+            routeFramesMax: 64,
+            routeStepDivisor: 3,
+            frameDelay: 24,
+        },
+        normal: {
+            maxEdges: 1000,
+            mobileMaxEdges: 520,
+            batchSize: 38,
+            mobileBatchSize: 24,
+            routeFramesMax: 46,
+            routeStepDivisor: 4,
+            frameDelay: 8,
+        },
+        fast: {
+            maxEdges: 820,
+            mobileMaxEdges: 420,
+            batchSize: 58,
+            mobileBatchSize: 36,
+            routeFramesMax: 28,
+            routeStepDivisor: 6,
+            frameDelay: 0,
+        },
+    };
+    return configs[animationSpeed] || configs.normal;
+}
+
+function classifyExplorationBatch(batch, routeNodeKeys) {
+    const faint = [];
+    const hot = [];
+
+    batch.forEach(([from, to]) => {
+        const target = routeNodeKeys.has(coordKey(from)) || routeNodeKeys.has(coordKey(to)) ? hot : faint;
+        target.push([from, to]);
+    });
+
+    return { faint, hot };
+}
+
+function sampleEdges(edges, maxEdges) {
+    if (!Array.isArray(edges) || edges.length <= maxEdges) return edges || [];
+    const step = Math.ceil(edges.length / maxEdges);
+    return edges.filter((_, index) => index % step === 0);
+}
+
+async function animateRouteDraw() {
+    const paths = getVisiblePaths();
+    const longest = Math.max(...paths.map((path) => path.length), 0);
+    const config = getAnimationConfig();
+    const frames = Math.min(config.routeFramesMax, Math.max(10, Math.ceil(longest / config.routeStepDivisor)));
+
+    for (let frame = 1; frame <= frames; frame++) {
+        routeLayer.clearLayers();
+        const ratio = frame / frames;
+        drawVisibleRoutes(ratio);
+        await nextFrame(config.frameDelay);
+    }
+}
+
+function nextFrame(delay = 0) {
+    return new Promise((resolve) => {
+        requestAnimationFrame(() => {
+            if (delay > 0) {
+                window.setTimeout(resolve, delay);
+            } else {
+                resolve();
+            }
+        });
+    });
+}
+
+function fadeAnimationLayer() {
+    frontierLayer.clearLayers();
+    visitedLayer.eachLayer((layer) => {
+        if (layer.setStyle) {
+            layer.setStyle({ opacity: 0.045 });
+        }
+    });
+    animationLayer.eachLayer((layer) => {
+        if (layer.setStyle) {
+            layer.setStyle({ opacity: 0.08 });
+        }
+    });
+}
+
+function clearAnimationLayers() {
+    if (visitedLayer) visitedLayer.clearLayers();
+    if (frontierLayer) frontierLayer.clearLayers();
+    if (animationLayer) animationLayer.clearLayers();
+}
+
+function setRouteMode(mode) {
+    routeMode = mode;
+    document.querySelectorAll("[data-route-mode]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.routeMode === mode);
+    });
+    displayRoutes();
+    displayStats();
+}
+
+function displayRoutes(options = {}) {
+    routeLayer.clearLayers();
+    routeLabelLayer.clearLayers();
+    if (!routesData) return;
+
+    drawVisibleRoutes(1);
+    drawRouteLabels();
+
+    if (options.fit) {
+        const allCoords = [
+            ...(routesData.time_route.path || []),
+            ...(routesData.pollution_route.path || []),
+        ];
+        if (allCoords.length > 0) {
+            map.fitBounds(allCoords, {
+                paddingTopLeft: [390, 120],
+                paddingBottomRight: [80, 180],
+                maxZoom: 15,
+            });
         }
     }
 }
 
-function displayRoutes() {
-    timeLayer.clearLayers();
-    pollutionLayer.clearLayers();
-    
-    const showFastest = document.getElementById('showFastest').checked;
-    const showGreenest = document.getElementById('showGreenest').checked;
-    
-    if (showFastest) {
-        const timeColor = isDarkMode ? '#00d9ff' : '#3b82f6';
-        L.polyline(routesData.time_route.path, {
-            color: timeColor,
-            weight: 3,
-            opacity: 1,
-        }).addTo(timeLayer);
+function drawVisibleRoutes(progress = 1) {
+    if (!routesData) return;
+
+    const timePath = trimPath(routesData.time_route.path || [], progress);
+    const greenPath = trimPath(routesData.pollution_route.path || [], progress);
+
+    if (routeMode === "fastest") {
+        drawPath(timePath, colors.fastest, 5, 0.95);
+        return;
     }
-    
-    if (showGreenest) {
-        const greenColor = isDarkMode ? '#00ff88' : '#10b981';
-        L.polyline(routesData.pollution_route.path, {
-            color: greenColor,
-            weight: 3,
-            opacity: 1,
-        }).addTo(pollutionLayer);
+
+    if (routeMode === "greenest") {
+        drawPath(greenPath, colors.greenest, 5, 0.95);
+        return;
     }
-    
-    const allCoords = [...routesData.time_route.path, ...routesData.pollution_route.path];
-    if (allCoords.length > 0) map.fitBounds(allCoords);
+
+    drawComparedRoutes(timePath, greenPath);
+}
+
+function trimPath(path, progress) {
+    if (progress >= 1 || path.length <= 2) return path;
+    const visibleLength = Math.max(2, Math.ceil(path.length * progress));
+    return path.slice(0, visibleLength);
+}
+
+function drawComparedRoutes(timePath, greenPath) {
+    const timeSegments = getSegments(timePath);
+    const greenSegments = getSegments(greenPath);
+    const greenKeys = new Set(greenSegments.map((segment) => segment.key));
+    const sharedKeys = new Set(timeSegments.filter((segment) => greenKeys.has(segment.key)).map((segment) => segment.key));
+
+    drawSegments(timeSegments.filter((segment) => !sharedKeys.has(segment.key)), colors.fastest, 5, 0.92);
+    drawSegments(greenSegments.filter((segment) => !sharedKeys.has(segment.key)), colors.greenest, 5, 0.92);
+    drawOverlapSegments(timeSegments.filter((segment) => sharedKeys.has(segment.key)));
+}
+
+function drawPath(path, color, weight, opacity) {
+    if (path.length < 2) return;
+    L.polyline(path, {
+        color,
+        weight: weight + 3,
+        opacity: 0.1,
+        lineCap: "round",
+        lineJoin: "round",
+        renderer: routeRenderer,
+        interactive: false,
+    }).addTo(routeLayer);
+    L.polyline(path, {
+        color,
+        weight,
+        opacity,
+        lineCap: "round",
+        lineJoin: "round",
+        renderer: routeRenderer,
+        interactive: false,
+    }).addTo(routeLayer);
+}
+
+function drawSegments(segments, color, weight, opacity) {
+    if (!segments.length) return;
+    L.polyline(segments.map((segment) => [segment.from, segment.to]), {
+        color,
+        weight,
+        opacity,
+        lineCap: "round",
+        lineJoin: "round",
+        renderer: routeRenderer,
+        interactive: false,
+    }).addTo(routeLayer);
+}
+
+function drawOverlapSegments(segments) {
+    if (!segments.length) return;
+    segments.forEach((segment) => {
+        const coords = [segment.from, segment.to];
+        L.polyline(coords, {
+            color: "#e2e8f0",
+            weight: 7,
+            opacity: 0.34,
+            lineCap: "butt",
+            renderer: routeRenderer,
+            interactive: false,
+        }).addTo(routeLayer);
+        L.polyline(coords, {
+            color: colors.overlapGreen,
+            weight: 5,
+            opacity: 0.92,
+            lineCap: "butt",
+            renderer: routeRenderer,
+            interactive: false,
+        }).addTo(routeLayer);
+        L.polyline(coords, {
+            color: colors.overlapBlue,
+            weight: 5,
+            opacity: 0.98,
+            dashArray: "7 7",
+            dashOffset: "0",
+            lineCap: "butt",
+            renderer: routeRenderer,
+            interactive: false,
+        }).addTo(routeLayer);
+        L.polyline(coords, {
+            color: "#f8fafc",
+            weight: 1.5,
+            opacity: 0.5,
+            dashArray: "2 12",
+            dashOffset: "6",
+            lineCap: "butt",
+            renderer: routeRenderer,
+            interactive: false,
+        }).addTo(routeLayer);
+    });
+}
+
+function getSegments(path) {
+    const segments = [];
+    for (let i = 0; i < path.length - 1; i += 1) {
+        segments.push({
+            from: path[i],
+            to: path[i + 1],
+            key: segmentKey(path[i], path[i + 1]),
+        });
+    }
+    return segments;
+}
+
+function segmentKey(a, b) {
+    const first = coordKey(a);
+    const second = coordKey(b);
+    return first < second ? `${first}|${second}` : `${second}|${first}`;
+}
+
+function coordKey(coord) {
+    return `${Number(coord[0]).toFixed(6)},${Number(coord[1]).toFixed(6)}`;
+}
+
+function getVisiblePaths() {
+    if (!routesData) return [];
+    if (routeMode === "fastest") return [routesData.time_route.path || []];
+    if (routeMode === "greenest") return [routesData.pollution_route.path || []];
+    return [routesData.time_route.path || [], routesData.pollution_route.path || []];
+}
+
+function getRouteNodeKeys() {
+    const keys = new Set();
+    getVisiblePaths().forEach((path) => {
+        path.forEach((coord) => keys.add(coordKey(coord)));
+    });
+    return keys;
 }
 
 function displayStats() {
+    if (!routesData) return;
+
     const timeStats = routesData.time_route.stats;
     const pollutionStats = routesData.pollution_route.stats;
-    
-    document.getElementById('fastestStats').innerHTML = `
-        <div class="stat-item">
-            <span class="stat-label">Distance</span>
-            <span class="stat-value">${timeStats.distance_km.toFixed(2)} km</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-label">Time</span>
-            <span class="stat-value">${timeStats.time_minutes.toFixed(1)} min</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-label">Pollution Score</span>
-            <span class="stat-value">${timeStats.pollution_score.toFixed(0)}</span>
-        </div>
-    `;
-    
-    document.getElementById('greenestStats').innerHTML = `
-        <div class="stat-item">
-            <span class="stat-label">Distance</span>
-            <span class="stat-value">${pollutionStats.distance_km.toFixed(2)} km</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-label">Time</span>
-            <span class="stat-value">${pollutionStats.time_minutes.toFixed(1)} min</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-label">Pollution Score</span>
-            <span class="stat-value">${pollutionStats.pollution_score.toFixed(0)}</span>
-        </div>
-    `;
-    
     const timeDiff = pollutionStats.time_minutes - timeStats.time_minutes;
-    const pollutionDiff = timeStats.pollution_score - pollutionStats.pollution_score;
-    const pollutionReduction = (pollutionDiff / timeStats.pollution_score * 100).toFixed(1);
-    
-    document.getElementById('comparisonStats').innerHTML = `
+    const timePm25 = getPm25(timeStats);
+    const greenPm25 = getPm25(pollutionStats);
+    const pollutionDiff = timePm25 - greenPm25;
+    const pollutionReduction = timePm25
+        ? (pollutionDiff / timePm25 * 100)
+        : 0;
+
+    document.getElementById("fastestStats").innerHTML = statsMarkup([
+        ["Distance", `${timeStats.distance_km.toFixed(2)} km`],
+        ["Time", `${timeStats.time_minutes.toFixed(1)} min`],
+        ["PM2.5", formatMass(timePm25)],
+        ["PM10", formatMass(getPm10(timeStats))],
+    ]);
+
+    document.getElementById("greenestStats").innerHTML = statsMarkup([
+        ["Distance", `${pollutionStats.distance_km.toFixed(2)} km`],
+        ["Time", `${pollutionStats.time_minutes.toFixed(1)} min`],
+        ["PM2.5", formatMass(greenPm25)],
+        ["PM10", formatMass(getPm10(pollutionStats))],
+    ]);
+
+    document.getElementById("comparisonStats").innerHTML = statsMarkup([
+        ["Extra time", `${timeDiff >= 0 ? "+" : ""}${timeDiff.toFixed(1)} min`],
+        ["PM2.5 saved", `${formatMass(pollutionDiff)} (${pollutionReduction.toFixed(1)}%)`],
+        ["Mode", modeLabel(routeMode)],
+    ]);
+
+    document.getElementById("fastestCard").classList.toggle("dimmed", routeMode === "greenest");
+    document.getElementById("greenestCard").classList.toggle("dimmed", routeMode === "fastest");
+    document.getElementById("comparisonCard").classList.toggle("dimmed", routeMode !== "compare");
+    applyStatsVisibility();
+}
+
+function drawRouteLabels() {
+    if (!routesData) return;
+
+    if (routeMode === "fastest") {
+        addRouteLabel(routesData.time_route, "fastest", 0.5);
+        return;
+    }
+
+    if (routeMode === "greenest") {
+        addRouteLabel(routesData.pollution_route, "greenest", 0.5);
+        return;
+    }
+
+    addRouteLabel(routesData.time_route, "fastest", 0.62);
+    addRouteLabel(routesData.pollution_route, "greenest", 0.38);
+}
+
+function addRouteLabel(route, type, positionRatio = 0.5) {
+    const path = route?.path || [];
+    const stats = route?.stats;
+    if (path.length < 2 || !stats) return;
+
+    const labelIndex = Math.min(
+        path.length - 1,
+        Math.max(0, Math.round((path.length - 1) * positionRatio)),
+    );
+    const label = type === "fastest" ? "Fastest" : "Greenest";
+    const icon = L.divIcon({
+        className: "",
+        html: `
+            <div class="route-chip ${type}">
+                <strong>${label}</strong>
+                <span>${stats.distance_km.toFixed(1)} km · ${stats.time_minutes.toFixed(0)} min</span>
+            </div>
+        `,
+        iconSize: [146, 42],
+        iconAnchor: type === "fastest" ? [8, 34] : [138, 8],
+    });
+
+    L.marker(path[labelIndex], {
+        icon,
+        interactive: false,
+        keyboard: false,
+    }).addTo(routeLabelLayer);
+}
+
+function statsMarkup(rows) {
+    return rows.map(([label, value]) => `
         <div class="stat-item">
-            <span class="stat-label">Extra Time</span>
-            <span class="stat-value" style="color: #f59e0b;">+${timeDiff.toFixed(1)} min</span>
+            <span>${label}</span>
+            <span class="stat-value">${value}</span>
         </div>
-        <div class="stat-item">
-            <span class="stat-label">Pollution Saved</span>
-            <span class="stat-value" style="color: #10b981;">${pollutionReduction}%</span>
-        </div>
-    `;
-    
-    document.getElementById('statsCard').classList.add('show');
+    `).join("");
+}
+
+function getPm25(stats) {
+    return Number(stats.pm25_mg ?? stats.pollution_score ?? 0);
+}
+
+function getPm10(stats) {
+    return Number(stats.pm10_mg ?? getPm25(stats) * 2.5);
+}
+
+function formatMass(value) {
+    const absValue = Math.abs(value);
+    const formatted = absValue >= 100 ? value.toFixed(0) : value.toFixed(1);
+    return `${formatted} mg`;
+}
+
+function modeLabel(mode) {
+    if (mode === "fastest") return "Fastest only";
+    if (mode === "greenest") return "Greenest only";
+    return "Compare";
 }
 
 function toggleMenu() {
-    document.getElementById('controlPanel').classList.toggle('open');
+    document.getElementById("controlPanel").classList.toggle("open");
 }
 
 function toggleDarkMode() {
-    isDarkMode = document.getElementById('darkMode').checked;
-    document.body.classList.toggle('dark-mode', isDarkMode);
-    
+    isDarkMode = !isDarkMode;
+    document.body.classList.toggle("dark-mode", isDarkMode);
+
     if (isDarkMode) {
-        map.removeLayer(lightTileLayer);
+        if (map.hasLayer(lightTileLayer)) map.removeLayer(lightTileLayer);
         darkTileLayer.addTo(map);
     } else {
-        map.removeLayer(darkTileLayer);
+        if (map.hasLayer(darkTileLayer)) map.removeLayer(darkTileLayer);
         lightTileLayer.addTo(map);
     }
-    
-    if (routesData) {
-        displayRoutes();
+
+    if (mapContext) drawMapContext(mapContext);
+    updateThemeToggle();
+}
+
+function updateThemeToggle() {
+    const icon = document.getElementById("themeToggleIcon");
+    const button = document.getElementById("themeToggle");
+    if (!icon || !button) return;
+    icon.textContent = isDarkMode ? "🌙" : "☀";
+    button.setAttribute("aria-label", isDarkMode ? "Switch to light mode" : "Switch to dark mode");
+}
+
+function setAnimationSpeed(speed) {
+    animationSpeed = ["slow", "normal", "fast"].includes(speed) ? speed : "normal";
+    document.querySelectorAll("[data-animation-speed]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.animationSpeed === animationSpeed);
+    });
+    showToast(`Animation speed: ${animationSpeed}`);
+}
+
+function toggleLegend() {
+    const isVisible = document.getElementById("showLegend").checked;
+    document.querySelector(".legend-grid").classList.toggle("hidden", !isVisible);
+}
+
+function toggleRouteComparison() {
+    applyStatsVisibility();
+}
+
+function applyStatsVisibility() {
+    const statsCard = document.getElementById("statsCard");
+    const shouldShow = Boolean(routesData && document.getElementById("showComparison").checked);
+    statsCard.classList.toggle("show", shouldShow);
+}
+
+function toggleHudPanel() {
+    const panel = document.getElementById("hudPanel");
+    const isCollapsed = panel.classList.toggle("collapsed");
+    const button = panel.querySelector(".hud-collapse-btn");
+    const icon = panel.querySelector(".hud-collapse-icon");
+    button.setAttribute("aria-label", isCollapsed ? "Expand route information" : "Collapse route information");
+    icon.textContent = isCollapsed ? "+" : "−";
+}
+
+function openAboutModal() {
+    const modal = document.getElementById("aboutModal");
+    modal.classList.add("show");
+    modal.setAttribute("aria-hidden", "false");
+}
+
+function closeAboutModal() {
+    const modal = document.getElementById("aboutModal");
+    modal.classList.remove("show");
+    modal.setAttribute("aria-hidden", "true");
+}
+
+function ensureAudioContext() {
+    if (!audioContext) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) audioContext = new AudioContextClass();
+    }
+    if (audioContext && audioContext.state === "suspended") {
+        audioContext.resume();
     }
 }
 
-function toggleRoute(type) {
-    if (routesData) {
-        displayRoutes();
-    }
+function playSuccessSound() {
+    if (!soundEnabled) return;
+    ensureAudioContext();
+    if (!audioContext) return;
+
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(520, audioContext.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(840, audioContext.currentTime + 0.16);
+    gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.08 * soundVolume, audioContext.currentTime + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.22);
+    oscillator.connect(gain).connect(audioContext.destination);
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.24);
+}
+
+function playPinSound(type) {
+    if (!soundEnabled) return;
+    ensureAudioContext();
+    if (!audioContext) return;
+
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    oscillator.type = "triangle";
+    oscillator.frequency.setValueAtTime(type === "start" ? 420 : 620, audioContext.currentTime);
+    gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.065 * soundVolume, audioContext.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.14);
+    oscillator.connect(gain).connect(audioContext.destination);
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.16);
+}
+
+function playSearchPulse() {
+    if (!soundEnabled) return;
+    ensureAudioContext();
+    if (!audioContext) return;
+
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    oscillator.type = "sawtooth";
+    oscillator.frequency.setValueAtTime(160, audioContext.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(260, audioContext.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.025 * soundVolume, audioContext.currentTime + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.1);
+    oscillator.connect(gain).connect(audioContext.destination);
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.11);
 }
 
 async function replayAnimation() {
     if (!routesData) {
-        alert('Please calculate a route first!');
+        showToast("Calculate a route first");
         return;
     }
-    
-    if (animationRunning) return;
-    
+
     await runAnimation();
     displayRoutes();
 }
@@ -285,12 +870,14 @@ function resetMap() {
     startMarker = null;
     endMarker = null;
     routesData = null;
+    animationRunning = false;
     markersLayer.clearLayers();
-    timeLayer.clearLayers();
-    pollutionLayer.clearLayers();
-    timeAnimationLayer.clearLayers();
-    pollAnimationLayer.clearLayers();
-    document.getElementById('statsCard').classList.remove('show');
+    routeLayer.clearLayers();
+    routeLabelLayer.clearLayers();
+    clearAnimationLayers();
+    document.getElementById("statsCard").classList.remove("show");
+    setStatus("Choose a start point, then choose a destination.");
+    showToast("Map reset");
 }
 
 initMap();

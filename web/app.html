@@ -3,132 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Map — Green Path AI</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <title>Map - GreenPath AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <div class="header">
-        <a href="/" class="back-link">← Home</a>
-        <h1>Route map</h1>
-        <p>Click two points to compare fastest vs greenest routes</p>
-    </div>
-    
-    <button class="menu-btn" onclick="toggleMenu()">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
-        </svg>
-    </button>
-    
-    <div class="control-panel" id="controlPanel">
-        <div class="control-section">
-            <h3>Display Settings</h3>
-            <div class="toggle-item">
-                <label for="darkMode">Dark Mode</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="darkMode" onchange="toggleDarkMode()">
-                    <span class="slider"></span>
-                </label>
-            </div>
-        </div>
-        
-        <div class="control-section">
-            <h3>Route Display</h3>
-            <div class="toggle-item">
-                <label for="showFastest">Show Fastest Route</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="showFastest" checked onchange="toggleRoute('time')">
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <div class="toggle-item">
-                <label for="showGreenest">Show Greenest Route</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="showGreenest" checked onchange="toggleRoute('pollution')">
-                    <span class="slider"></span>
-                </label>
-            </div>
-        </div>
-        
-        <div class="control-section">
-            <h3>Animation Settings</h3>
-            <div class="toggle-item">
-                <label for="enableAnimation">Enable Animation</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="enableAnimation" checked>
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <div class="toggle-item">
-                <label for="animateTime">Animate Time Route</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="animateTime" checked>
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <div class="toggle-item">
-                <label for="animatePollution">Animate Pollution Route</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="animatePollution" checked>
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <button class="btn btn-primary" onclick="replayAnimation()">Replay Animation</button>
-        </div>
-        
-        <div class="control-section">
-            <h3>Actions</h3>
-            <button class="btn btn-secondary" onclick="resetMap()">Reset Map</button>
-        </div>
-        
-        <div class="control-section">
-            <h3>Legend</h3>
-            <div class="legend-item">
-                <div class="legend-color" style="background: #3b82f6;"></div>
-                <span>Fastest Route</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background: #10b981;"></div>
-                <span>Greenest Route</span>
-            </div>
-        </div>
-    </div>
-    
-    <div id="map"></div>
-    
-    <div class="stats-card" id="statsCard">
-        <div class="stats-grid">
-            <div class="stat-box fastest">
-                <div class="stat-title">
-                    <span class="stat-icon">⚡</span>
-                    <span>Fastest Route</span>
+<body class="theme-civic">
+    <main class="map-shell">
+        <div id="map"></div>
+
+        <header class="app-topbar glass-panel">
+            <a href="/" class="home-link" aria-label="Back to landing page">GreenPath AI</a>
+            <div class="route-view-control" aria-label="Route view controls">
+                <span class="route-view-label">Route View:</span>
+                <div class="route-mode-group" role="group" aria-label="Route display mode">
+                    <button class="mode-btn" data-route-mode="fastest" type="button">Fastest</button>
+                    <button class="mode-btn" data-route-mode="greenest" type="button">Greenest</button>
+                    <button class="mode-btn active" data-route-mode="compare" type="button">Compare</button>
                 </div>
-                <div id="fastestStats"></div>
             </div>
-            <div class="stat-box greenest">
-                <div class="stat-title">
-                    <span class="stat-icon">🌱</span>
-                    <span>Greenest Route</span>
+            <div class="top-actions">
+                <button class="action-btn" onclick="replayAnimation()" type="button">Replay</button>
+                <button class="action-btn" onclick="resetMap()" type="button">Reset</button>
+                <button class="icon-btn theme-toggle-btn" id="themeToggle" onclick="toggleDarkMode()" aria-label="Switch to dark mode" type="button">
+                    <span id="themeToggleIcon" aria-hidden="true">☀</span>
+                </button>
+                <button class="icon-btn" onclick="toggleMenu()" aria-label="Open settings" type="button">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                        <line x1="4" y1="6" x2="20" y2="6"></line>
+                        <line x1="4" y1="12" x2="20" y2="12"></line>
+                        <line x1="4" y1="18" x2="20" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <aside class="hud-panel glass-panel" id="hudPanel">
+            <button class="hud-collapse-btn" onclick="toggleHudPanel()" aria-label="Collapse route information" type="button">
+                <span class="hud-collapse-icon" aria-hidden="true">−</span>
+            </button>
+            <div class="hud-content">
+                <p class="hud-kicker">Greater Jakarta</p>
+                <h1>Route Visualizer</h1>
+                <p id="routeStatus">Choose a start point, then choose a destination.</p>
+
+                <div class="legend-grid" aria-label="Route legend">
+                    <span><i class="legend-line blue"></i> Fastest</span>
+                    <span><i class="legend-line green"></i> Greenest</span>
+                    <span><i class="legend-line striped"></i> Overlap</span>
                 </div>
-                <div id="greenestStats"></div>
-            </div>
-            <div class="stat-box comparison">
-                <div class="stat-title">
-                    <span class="stat-icon">📊</span>
-                    <span>Comparison</span>
+
+                <div class="algorithm-note">
+                    A* compares the cost already travelled with an estimated cost to the goal.
+                    GreenPath AI runs it twice: once for time, once for estimated PM mass.
                 </div>
-                <div id="comparisonStats"></div>
             </div>
+        </aside>
+
+        <aside class="control-panel glass-panel" id="controlPanel" aria-label="Settings panel">
+            <div class="control-section">
+                <h2>Playback</h2>
+                <div class="toggle-item">
+                    <label for="enableAnimation">Route animation</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="enableAnimation" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="range-item">
+                    <label for="soundVolume">Sound volume</label>
+                    <input type="range" id="soundVolume" min="0" max="100" value="70">
+                </div>
+                <div class="speed-control" aria-label="Animation speed">
+                    <span>Animation speed</span>
+                    <div class="segmented-control" role="group" aria-label="Animation speed">
+                        <button class="segment-btn" data-animation-speed="slow" type="button">Slow</button>
+                        <button class="segment-btn active" data-animation-speed="normal" type="button">Normal</button>
+                        <button class="segment-btn" data-animation-speed="fast" type="button">Fast</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h2>Information</h2>
+                <div class="toggle-item">
+                    <label for="showLegend">Legend</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showLegend" checked onchange="toggleLegend()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="toggle-item">
+                    <label for="showComparison">Route comparison</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showComparison" checked onchange="toggleRouteComparison()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <button class="panel-btn" onclick="openAboutModal()" type="button">About This Project</button>
+            </div>
+
+            <div class="control-section">
+                <h2>Attribution</h2>
+                <p class="panel-copy">
+                    Map data © OpenStreetMap contributors. Map tiles © CARTO.
+                    Interactive map rendering uses Leaflet.
+                </p>
+            </div>
+        </aside>
+
+        <div class="modal-backdrop" id="aboutModal" aria-hidden="true">
+            <section class="about-modal glass-panel" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+                <button class="modal-close" onclick="closeAboutModal()" aria-label="Close about dialog" type="button">×</button>
+                <h2 id="aboutTitle">About GreenPath AI</h2>
+                <p>
+                    GreenPath AI is a multimedia route visualization prototype that compares two A* pathfinding routes:
+                    the fastest route and the greenest route.
+                </p>
+                <h3>How It Works</h3>
+                <p>
+                    The A* algorithm searches for a path from the start point to the destination by combining:
+                </p>
+                <ol>
+                    <li>The cost already travelled</li>
+                    <li>An estimated cost to the destination</li>
+                </ol>
+                <p>In this prototype, A* is run using different route costs:</p>
+                <ul>
+                    <li>Fastest route: prioritizes estimated travel time</li>
+                    <li>Greenest route: prioritizes lower pollution or environmental cost</li>
+                </ul>
+                <h3>Multimedia Elements</h3>
+                <p><strong>Text:</strong> Algorithm and route explanations.</p>
+                <p><strong>Picture:</strong> Map tiles, route icons, and visual markers.</p>
+                <p><strong>Audio:</strong> Route completion cue or interaction sound.</p>
+                <p><strong>Video:</strong> Short explanation/demo video of A* pathfinding.</p>
+                <p><strong>Animation:</strong> Route drawing and path exploration animation.</p>
+            </section>
         </div>
-    </div>
-    
-    <div class="loading-indicator" id="loadingIndicator">
-        Calculating routes...
-    </div>
-    <div id="toast-notification" class="toast-notification"></div>
-    
+
+        <section class="stats-card glass-panel" id="statsCard" aria-live="polite">
+            <article class="stat-box fastest" id="fastestCard">
+                <span class="stat-heading">Fastest</span>
+                <div id="fastestStats" class="stat-body">Waiting for route.</div>
+            </article>
+            <article class="stat-box greenest" id="greenestCard">
+                <span class="stat-heading">Greenest</span>
+                <div id="greenestStats" class="stat-body">Waiting for route.</div>
+            </article>
+            <article class="stat-box comparison" id="comparisonCard">
+                <span class="stat-heading">Compare</span>
+                <div id="comparisonStats" class="stat-body">Pick two points to calculate.</div>
+            </article>
+        </section>
+
+        <div class="loading-indicator glass-panel" id="loadingIndicator">
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            Calculating routes...
+        </div>
+        <div id="toast-notification" class="toast-notification"></div>
+    </main>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script src="script.js"></script>
 </body>

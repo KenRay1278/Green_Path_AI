@@ -44,6 +44,7 @@ def astar_pathfinding(G, start_node, end_node, weight='length'):
     closed_set = set()   # Faster lookups than list
 
     MAX_SPEED_MPS = 80 / 3.6  # 80 km/h converted to meters/second (~22.2)
+    MIN_PM25_MG_PER_KM = 6 * 1.8  # motorway base factor * traffic multiplier
 
     while open_set:
         # Get the node with lowest F score
@@ -102,9 +103,8 @@ def astar_pathfinding(G, start_node, end_node, weight='length'):
                     # Time = Distance / MaxSpeed
                     h_score = h_dist / MAX_SPEED_MPS
                 elif weight == 'pollution':
-                    # Pollution = Distance * MinMultiplier
-                    # Min multiplier is 1.0 (Highways), so we use 1.0 to be safe
-                    h_score = h_dist
+                    # PM2.5 mass in mg = distance in km * minimum plausible mg/km.
+                    h_score = (h_dist / 1000) * MIN_PM25_MG_PER_KM
                 else:
                     h_score = h_dist
 
@@ -119,6 +119,7 @@ def calculate_route_stats(G, path, route_name="Route"):
     total_distance = 0
     total_time = 0
     total_pollution = 0
+    total_pm10 = 0
     road_types = {}
     
     for i in range(len(path) - 1):
@@ -126,12 +127,14 @@ def calculate_route_stats(G, path, route_name="Route"):
         
         distance = edge_data.get('length', 0)
         time = edge_data.get('time', 0)
-        pollution = edge_data.get('pollution', 0)
+        pm25 = edge_data.get('pm25_mg', edge_data.get('pollution', 0))
+        pm10 = edge_data.get('pm10_mg', pm25 * 2.5)
         road_type = edge_data.get('road_type', 'unknown')
         
         total_distance += distance
         total_time += time
-        total_pollution += pollution
+        total_pollution += pm25
+        total_pm10 += pm10
         road_types[road_type] = road_types.get(road_type, 0) + 1
     
     return {
@@ -139,6 +142,10 @@ def calculate_route_stats(G, path, route_name="Route"):
         'distance_km': total_distance / 1000,
         'time_minutes': total_time / 60,
         'pollution_score': total_pollution,
+        'pm25_mg': total_pollution,
+        'pm10_mg': total_pm10,
+        'pollution_unit': 'mg',
+        'pollution_unit_label': 'Estimated emitted particulate mass',
         'num_segments': len(path) - 1,
         'road_types': road_types
     }

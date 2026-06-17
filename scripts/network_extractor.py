@@ -7,8 +7,8 @@ from sys import argv
 # Configure OSMnx
 ox.settings.use_cache = True
 ox.settings.log_console = True
-ox.settings.timeout = 1800
-ox.settings.overpass_endpoint = "https://overpass.kumi.systems/api/interpreter" 
+ox.settings.timeout = 20000
+ox.settings.overpass_endpoint = "https://overpass-api.de/api/interpreter"
 #MODIFY OSM SERVER ENDPOINT HERE!
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

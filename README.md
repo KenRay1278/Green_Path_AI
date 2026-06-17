@@ -1,383 +1,196 @@
-# 🗺️ Jakarta Pollution-Aware Pathfinding AI
+# GreenPath AI
 
-A college project implementing A* pathfinding algorithm comparing time-optimized vs pollution-optimized routes in Jakarta, Indonesia.
+GreenPath AI is a Multimedia Systems route visualizer for Greater Jakarta. It compares
+the fastest route and the greenest route on a real OpenStreetMap road graph using A*
+pathfinding.
 
-## Project Overview
+The project started as an AI pathfinding assignment and is being refactored into a
+polished multimedia web app.
 
-This AI system provides two route options:
-- **Fastest Route** ⚡ - Minimizes travel time
-- **Greenest Route** 🌱 - Minimizes pollution/emissions
+## Current Stack
 
-Uses real Jakarta road network data from OpenStreetMap with custom pollution estimation based on road characteristics.
+- Python Flask backend
+- Static HTML, CSS, and JavaScript frontend
+- Bootstrap 5 via CDN for UI structure
+- Leaflet for interactive maps
+- OSMnx and NetworkX for road graph processing
+- Preprocessed Greater Jakarta graph stored in `data/processed/`
 
----
+There is no React, Vite, or Node build step in the current app.
+
+## App Routes
+
+| Route | Purpose |
+|---|---|
+| `/` | Landing page |
+| `/app` | Interactive map app |
+| `/api/route` | Route calculation API |
+| `/api/map-context` | Graph boundary and sampled network-line context |
+| `/api/health` | Backend and graph-data readiness check |
+| `/get_route` | Backwards-compatible route API alias |
 
 ## Project Structure
 
-```
-jakarta_pathfinding_ai/
-├── src/                              # Backend source code
-│   ├── app.py                        # Flask API server
-│   ├── pathfinding_algo.py           # A* algorithm implementation
-│   └── routes_data.json              # [Generated] Route results
-│
-├── data/                             # Data directory
-│   ├── raw/                          # Raw network data
-│   │   ├── jakarta_network_small.graphml
-│   │   ├── jakarta_network_large.graphml
-│   │   └── network_map_*.png
-│   └── processed/                    # Processed data
-│       └── jakarta_network_processed.pkl
-│
-├── web/                              # Frontend
-│   ├── index.html                    # Landing page
-│   ├── app.html                      # Interactive map
-│   ├── landing.css                   # Landing page styles
-│   ├── style.css                     # Map app styles
-│   └── script.js                     # Map app logic
-│
-├── scripts/                          # Setup & processing scripts
-│   ├── network_extractor.py          # Download OSM data
-│   ├── add_pollution_weights.py      # Add pollution estimates
-│   └── cache/                        # OSMnx cache
-│
-├── environment.yml                   # Conda environment
-├── setup_environment.py              # Setup script
-├── .gitignore                        # Git ignore rules
-└── README.md                         # This file
+```txt
+Green_Path_AI/
+  src/
+    app.py
+    pathfinding_algo.py
+  web/
+    index.html
+    app.html
+    landing.css
+    style.css
+    script.js
+  scripts/
+    network_extractor.py
+    add_pollution_weights.py
+    cache/
+  data/
+    raw/
+    processed/
+  environment.yml
+  requirements.txt
+  setup_environment.py
+  Procfile
+  .env.example
 ```
 
----
+## Local Setup
 
-## Quick Start
+Create or update the conda environment:
 
-### Prerequisites
-- **Conda** (Miniconda or Anaconda) - [Download](https://docs.conda.io/en/latest/miniconda.html)
-- **Git** (optional, for cloning)
-
-### Installation
-
-**Step 1: Setup Environment**
-```bash
-# Run automated setup
-python setup_environment.py
-```
-
-**Step 2: Activate Environment**
-```bash
-conda activate green_path
-```
-
-**Step 3: Extract Road Network (First time only)**
-```bash
-cd scripts
-python network_extractor.py
-```
-Takes 3-5 minutes
-
-**Step 4: Add Pollution Weights**
-```bash
-python add_pollution_weights.py
-```
-Takes ~30 seconds
-
-**Step 5: Start Server**
-```bash
-cd ../src
-python app.py
-```
-
-**Step 6: Open Web Interface**
-- Open http://localhost:5000/ in your browser (landing page)
-- Use **Try the demo** or http://localhost:5000/app for the map
-
----
-
-## Usage
-
-### Interactive Map
-1. **Click** on the map to set **Start Point**
-2. **Click** again to set **End Point**
-3. Algorithm automatically calculates both routes
-4. View comparison in the stats panel
-
-### Controls (Hamburger Menu)
-- **Dark Mode** - Toggle neon visualization
-- **Route Display** - Show/hide fastest/greenest routes
-- **Animation** - Visualize A* algorithm exploration
-- **Reset** - Clear map and start over
-
-### Animation Features
-- See A* algorithm explore the graph in real-time
-- One-by-one animation (time route → pollution route)
-- Replay anytime
-
----
-
-## How It Works
-
-### 1. Road Network Extraction
-Uses `osmnx` to download real Jakarta road data from OpenStreetMap.
-
-### 2. Pollution Estimation Model
-```
-pollution_score = distance × pollution_multiplier × intersection_penalty
-```
-
-**Pollution Multipliers by Road Type:**
-- Residential: 2.5× (stop-and-go traffic)
-- Secondary: 1.8× (moderate traffic)
-- Primary: 1.6× (traffic lights)
-- Motorway: 1.0× (free-flowing)
-- Etc.
-
-**Additional Factors:**
-- Intersections: +10% (stop-and-go increases emissions)
-- Assumed Average speeds affect time calculation
-
-### 3. A* Pathfinding Algorithm
-Runs twice with different cost functions:
-
-**Time Route (Fastest):**
-- Cost = travel time (distance ÷ average assumed speed)
-- Heuristic = straight-line distance ÷ max speed (80km/h)
-
-**Pollution Route (Greenest):**
-- Cost = pollution score
-- Heuristic = straight-line distance × min pollution factor (1.0)
-
-### 4. Results Comparison
-Shows:
-- Distance, time, and pollution for each route
-- Extra time needed for green route
-- Pollution reduction percentage
-
----
-
-## Technical Details
-
-### Technologies
-- **Backend:** Flask (Python 3.11)
-- **Algorithm:** A* with custom heuristics
-- **Data:** OpenStreetMap via OSMnx
-- **Frontend:** Vanilla HTML/CSS/JS + Leaflet.js
-- **Maps:** Leaflet.js with CartoDB tiles
-
-### API Endpoint
-```
-GET http://localhost:5000/get_route
-Parameters:
-  - start_lat: float
-  - start_lon: float
-  - end_lat: float
-  - end_lon: float
-
-Returns: JSON with both routes, stats, and explored nodes
-```
-
-### Performance
-- Small network (~1000 nodes): <1 second per route
-- Large network (~10000 nodes): ~5-10 seconds per route
-- Animation: ~2ms per edge
-
----
-
-## Customization
-
-### Change Area Size
-In `scripts/network_extractor.py`:
-```python
-area_size = large #(Jakarta, Indonesia)
-# OR
-area_size = small #(Central Jakarta, Jakarta, Indonesia) for lighter load on memory
-```
-
-### Adjust Pollution Factors
-In `scripts/add_pollution_weights.py`:
-```python
-POLLUTION_FACTORS = {
-    'residential': 1.8,  # Modify these values
-    'highway': 1.0,
-    # ...
-}
-```
-
-### Animation Speed
-In `web/script.js`:
-```javascript
-const targetAnimationSpeed = 888;
-//                            ↑ Change this
-```
-
----
-
-## Environment Management
-
-### Useful Commands
-```bash
-# Activate environment
-conda activate green_path
-
-# Deactivate
-conda deactivate
-
-# Update environment
-conda env update -f environment.yml --prune
-
-# Export environment
-conda env export > environment_backup.yml
-
-# Remove environment
-conda env remove -n green_path
-
-# List environments
-conda env list
-```
-
----
-
-## Troubleshooting
-
-### "Conda not found"
-- Install Miniconda: https://docs.conda.io/en/latest/miniconda.html
-- Restart terminal after installation
-
-### "Network data not found"
-```bash
-cd scripts
-python network_extractor.py
-python add_pollution_weights.py
-```
-
-### "No route found"
-- Click points closer to actual roads
-- Try different start/end locations
-- Ensure points are within Jakarta bounds
-
-### "Flask server not starting"
-```bash
-# Check if environment is activated
-conda activate green_path
-
-# Check if in correct directory
-cd src
-python app.py
-```
-
-### "Animation not working"
-- Check browser console for errors
-- Ensure Flask server is running
-- Verify `explored_edges` data exists in API response
-
-### Network download fails
-- Check internet connection
-- OpenStreetMap might be slow, retry later
-- Try smaller area first
-
----
-
-## Dependencies
-
-### Core Libraries
-- `osmnx` - Road network extraction
-- `networkx` - Graph algorithms
-- `geopandas` - Geospatial data
-- `flask` - Web server
-- `flask-cors` - Cross-origin requests
-
-### Visualization
-- `matplotlib` - Network visualization
-- `folium` - Web maps
-- Leaflet.js - Interactive maps
-
-### Scientific
-- `numpy` - Numerical computing
-- `pandas` - Data manipulation
-- `scikit-learn` - ML utilities
-
-Full list in `environment.yml`
-
----
-
-## Educational Value
-
-This project demonstrates:
-- **Graph Algorithms:** A* with custom heuristics
-- **Real-world Data:** OpenStreetMap integration
-- **Multi-objective Optimization:** Time vs environment
-- **Full-stack Development:** Backend + Frontend
-- **API Design:** RESTful Flask API
-- **Geospatial Computing:** Working with coordinates & projections
-
----
-
-
-## License
-
-This is a college project for Artificial Intelligence Class in BINUS University. Free to use and modify for educational purposes.
-
----
-
-## Credits
-
-- **OpenStreetMap** - Road network data
-- **OSMnx** - Network extraction library
-- **Leaflet.js** - Web mapping
-- **CartoDB** - Map tiles
-- **Jakarta Government** - City data
-
----
-
-## Contributors
-
-- Kenneth Raymond
-- Richson Limec
-- Jonathan Gho
-- Project: Assurance of Learning
-- Course: AI
-- University: Bina Nusantara University
-- Semester: 3
-
----
-
-## Support
-
-
-### Common Workflows
-
-**First Time:**
 ```bash
 python setup_environment.py
-conda activate green_path
-cd scripts
-python network_extractor.py
-python add_pollution_weights.py
-cd ../src
-python app.py
 ```
 
-**Daily Use:**
+Or manually:
+
+```bash
+conda env update -n green_path -f environment.yml --prune
+conda activate green_path
+```
+
+If Flask or OSMnx is missing inside the activated environment, repair it with:
+
+```bash
+conda env update -n green_path -f environment.yml --prune
+```
+
+## Generate Route Data
+
+The app is standardized around the Greater Jakarta dataset.
+
 ```bash
 conda activate green_path
-python app.py
+python scripts/network_extractor.py large
+python scripts/add_pollution_weights.py large
 ```
 
-**Clean Restart:**
+This creates:
+
+```txt
+data/processed/jakarta_network_processed.pkl
+```
+
+For a faster local test only, you can still pass `small`:
+
 ```bash
-# Remove generated files
-del data\raw\*.graphml data\processed\*.pkl
-# Or on Mac/Linux:
-rm data/raw/*.graphml data/processed/*.pkl
-
-# Regenerate
-cd scripts
-python network_extractor.py
-python add_pollution_weights.py
+python scripts/network_extractor.py small
+python scripts/add_pollution_weights.py small
 ```
 
----
+## Run the App
 
-**Created for Assurance of Learning - Artificial Intelligence Project**  
-**Focus:** Transportation Emissions in Major Cities
-**Environment:** `green_path` conda environment  
-**Python Version:** 3.11
+```bash
+conda activate green_path
+python src/app.py
+```
+
+Open:
+
+```txt
+http://localhost:5000/
+```
+
+Health check:
+
+```txt
+http://localhost:5000/api/health
+```
+
+## Environment Variables
+
+Copy `.env.example` if your hosting provider supports environment files.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `PORT` | `5000` | Flask server port |
+| `GREENPATH_GRAPH_FILE` | `jakarta_network_processed.pkl` | Processed graph filename |
+
+## Backend Change Notes
+
+Major changes:
+
+- Backend routes are standardized around `/api/route`, `/api/map-context`, and `/api/health`.
+- `/get_route` remains available as a backwards-compatible route alias.
+- The route pipeline uses `data/raw/jakarta_network_large.graphml` for Greater Jakarta and writes `data/processed/jakarta_network_processed.pkl`.
+- Pollution is modeled as simplified emitted particulate mass: `PM2.5 mg` and `PM10 mg`.
+
+Minor changes:
+
+- The graph loads lazily, so the app can return clear JSON setup errors instead of crashing at import time.
+- `pollution_score` remains in API responses as a compatibility alias for `pm25_mg`.
+- `scripts/add_pollution_weights.py` now supports `large`, `small`, `2`, and `1` command arguments.
+- The processing script now prints the actual processed output path after saving.
+
+## Multimedia Roadmap
+
+The final Multimedia Systems submission should include:
+
+- [x] Text: landing page copy, route stats, comparison summary
+- [x] Picture/Image: Leaflet map and generated network map asset
+- [x] Audio: user-controlled generated route-complete sound cue
+- [x] Video: landing hero looping demo placeholder
+- [x] Animation: A* exploration and route display animation
+
+Pollution is displayed as simplified emitted particulate mass: `PM2.5 mg` and
+`PM10 mg` for one representative vehicle. It is useful for comparing route
+alternatives inside this project, not for ambient air-concentration claims.
+
+Asset folders:
+
+```txt
+web/assets/images/
+web/assets/audio/
+web/assets/video/
+```
+
+The current app uses generated placeholders, so missing media files do not break the
+interface. Replace them later with final presentation assets if needed.
+
+## Deployment Direction
+
+Recommended phase-one deployment: a single Flask app on Render or Railway.
+
+The included `Procfile` uses:
+
+```txt
+web: python src/app.py
+```
+
+Before deploying, confirm that the processed graph file is included or generated during
+setup. The app can start without the graph, but `/api/route` will return a clear JSON
+error until the graph is available.
+
+## Phase One Goal
+
+Phase one focuses on structure, deployment readiness, and clarity:
+
+- Keep the name GreenPath AI
+- Keep Flask plus static frontend
+- Standardize around Greater Jakarta
+- Use Bootstrap as the UI library
+- Simplify backend routing
+- Add `/api/health`
+- Prepare for multimedia UI work in phase two
