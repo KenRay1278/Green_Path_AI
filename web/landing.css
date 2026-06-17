@@ -7,6 +7,8 @@
     --line: rgba(30, 64, 175, 0.16);
     --blue: #007ACC;
     --blue-strong: #0069b8;
+    --blue-soft: #bae6fd;
+    --blue-text: #075985;
     --green: #25D366;
     --green-strong: #128C4A;
     --amber: #f59e0b;
@@ -25,6 +27,10 @@ body {
     font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     color: var(--ink);
     background: var(--page);
+}
+
+button {
+    font: inherit;
 }
 
 a {
@@ -268,7 +274,9 @@ main {
     left: 39%;
     top: 38%;
     border-radius: 999px 999px 999px 8px;
-    background: var(--blue);
+    color: var(--blue-text);
+    border-color: #e0f2fe;
+    background: var(--blue-soft);
 }
 
 .demo-pin.end {
@@ -327,6 +335,7 @@ main {
     text-decoration: none;
     font-weight: 900;
     transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+    cursor: pointer;
 }
 
 .primary-action {
@@ -579,7 +588,8 @@ main {
         font-size: 3.1rem;
     }
 
-    .hero-actions a {
+    .hero-actions a,
+    .hero-actions button {
         width: 100%;
     }
 

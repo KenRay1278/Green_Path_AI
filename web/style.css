@@ -7,6 +7,8 @@
     --muted: #a9b8c7;
     --blue: #007ACC;
     --blue-strong: #005f9e;
+    --blue-soft: #bae6fd;
+    --blue-text: #075985;
     --green: #25D366;
     --green-strong: #128C4A;
     --amber: #f59e0b;
@@ -626,26 +628,59 @@ input:checked + .slider::before {
 }
 
 .route-marker {
-    width: 76px;
+    width: 92px;
     height: 34px;
-    display: grid;
-    place-items: center;
-    color: #041016;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #102033;
     font-size: 0.72rem;
     font-weight: 1000;
     text-transform: uppercase;
     letter-spacing: 0;
-    border: 2px solid white;
-    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.22);
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.16);
+    padding: 4px 10px 4px 6px;
+}
+
+.marker-pin {
+    position: relative;
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    border: 2px solid #ffffff;
+    border-radius: 50% 50% 50% 4px;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.22);
+    transform: rotate(-45deg);
+}
+
+.marker-pin::after {
+    content: "";
+    position: absolute;
+    inset: 5px;
+    border-radius: 50%;
+    background: #ffffff;
+}
+
+.marker-text {
+    line-height: 1;
 }
 
 .route-marker.start {
-    border-radius: 999px 999px 999px 8px;
-    background: var(--blue);
+    color: var(--blue-text);
 }
 
 .route-marker.end {
-    border-radius: 8px 999px 999px 999px;
+    color: #0f5132;
+}
+
+.route-marker.start .marker-pin {
+    background: #38bdf8;
+}
+
+.route-marker.end .marker-pin {
     background: var(--green);
 }
 
@@ -1004,6 +1039,8 @@ body.theme-civic.dark-mode .leaflet-control-attribution {
     .app-topbar {
         grid-template-columns: 1fr auto;
         align-items: stretch;
+        gap: 10px;
+        padding: 8px;
     }
 
     .route-mode-group {
@@ -1015,7 +1052,7 @@ body.theme-civic.dark-mode .leaflet-control-attribution {
         grid-column: 1 / -1;
         grid-template-columns: 1fr;
         order: 3;
-        gap: 8px;
+        gap: 6px;
     }
 
     .top-actions {
@@ -1023,8 +1060,10 @@ body.theme-civic.dark-mode .leaflet-control-attribution {
     }
 
     .hud-panel {
-        top: 142px;
+        top: 154px;
         width: calc(100vw - 32px);
+        max-height: calc(100vh - 250px);
+        overflow-y: auto;
     }
 
     .hud-panel.collapsed {
@@ -1032,12 +1071,17 @@ body.theme-civic.dark-mode .leaflet-control-attribution {
     }
 
     .control-panel {
-        top: 142px;
+        top: 154px;
+        max-height: calc(100vh - 174px);
+        overflow-y: auto;
     }
 
     .stats-card {
+        left: 16px;
+        right: 16px;
+        bottom: 16px;
         grid-template-columns: 1fr;
-        max-height: 42vh;
+        max-height: 34vh;
         overflow-y: auto;
     }
 }
@@ -1047,38 +1091,78 @@ body.theme-civic.dark-mode .leaflet-control-attribution {
         left: 10px;
         right: 10px;
         top: 10px;
+        grid-template-columns: 1fr;
         gap: 10px;
+    }
+
+    .home-link {
+        justify-content: center;
+    }
+
+    .top-actions {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        width: 100%;
     }
 
     .home-link,
     .action-btn,
-    .mode-btn {
-        min-height: 38px;
+    .mode-btn,
+    .icon-btn {
+        min-height: 36px;
         font-size: 0.8rem;
     }
 
+    .icon-btn {
+        width: auto;
+    }
+
+    .route-mode-group {
+        gap: 6px;
+    }
+
     .action-btn {
-        padding: 0 10px;
+        padding: 0 8px;
     }
 
     .hud-panel {
         left: 10px;
-        top: 132px;
+        top: 206px;
         width: calc(100vw - 20px);
+        max-height: calc(100vh - 300px);
         padding: 14px;
+    }
+
+    .hud-panel.collapsed {
+        width: 44px;
+        min-height: 44px;
     }
 
     .control-panel {
         right: 10px;
-        top: 132px;
+        top: 206px;
         width: calc(100vw - 20px);
+        max-height: calc(100vh - 226px);
+        padding: 14px;
     }
 
     .legend-grid {
         grid-template-columns: 1fr 1fr 1fr;
+        gap: 8px;
     }
 
     .route-view-label {
+        font-size: 0.78rem;
+        text-align: center;
+    }
+
+    .segmented-control {
+        gap: 4px;
+    }
+
+    .segment-btn {
+        min-height: 34px;
+        padding: 0 8px;
         font-size: 0.78rem;
     }
 
@@ -1094,5 +1178,17 @@ body.theme-civic.dark-mode .leaflet-control-attribution {
     .route-chip {
         min-width: 128px;
         font-size: 0.68rem;
+    }
+
+    .stats-card {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        max-height: 30vh;
+        padding: 12px;
+    }
+
+    .leaflet-control-zoom {
+        margin-bottom: 12px !important;
     }
 }

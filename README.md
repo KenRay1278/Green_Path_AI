@@ -1,11 +1,13 @@
 # GreenPath AI
 
-GreenPath AI is a map route visualizer. It compares
-the fastest route and the greenest route on a real OpenStreetMap road graph using A*
-pathfinding.
+GreenPath AI is an interactive route-comparison app for exploring tradeoffs between
+fast travel and lower-emission route choices. It combines A* pathfinding, map-based
+visualization, route statistics, and simplified particulate-emission estimates in a
+single Flask web app.
 
-The project started as an AI pathfinding assignment and is being refactored into a
-polished multimedia web app.
+The app currently ships with a preprocessed sample road graph so deployment does not
+need to fetch or process map data at runtime. The pipeline is designed so other map
+areas can be prepared and swapped in later.
 
 ## Current Stack
 
@@ -14,7 +16,7 @@ polished multimedia web app.
 - Bootstrap 5 via CDN for UI structure
 - Leaflet for interactive maps
 - OSMnx and NetworkX for road graph processing
-- Preprocessed Greater Jakarta graph stored in `data/processed/`
+- Preprocessed route graph stored in `data/processed/`
 
 There is no React, Vite, or Node build step in the current app.
 
@@ -42,6 +44,10 @@ Green_Path_AI/
     landing.css
     style.css
     script.js
+    assets/
+      images/
+      audio/
+      video/
   scripts/
     network_extractor.py
     add_pollution_weights.py
@@ -77,20 +83,25 @@ If Flask or OSMnx is missing inside the activated environment, repair it with:
 conda env update -n green_path -f environment.yml --prune
 ```
 
-## Generate Route Data
+## Route Data
 
-The app is standardized around the Greater Jakarta dataset.
+The deployed app uses a preprocessed graph file:
+
+```txt
+data/processed/jakarta_network_processed.pkl
+```
+
+For this phase, the processed graph is committed so hosting providers can run the
+app directly without live Overpass fetching or preprocessing. To regenerate data
+locally, use the scripts in `scripts/` and keep the processed output filename aligned
+with `GREENPATH_GRAPH_FILE`.
+
+Example local regeneration:
 
 ```bash
 conda activate green_path
 python scripts/network_extractor.py large
 python scripts/add_pollution_weights.py large
-```
-
-This creates:
-
-```txt
-data/processed/jakarta_network_processed.pkl
 ```
 
 For a faster local test only, you can still pass `small`:
@@ -100,7 +111,7 @@ python scripts/network_extractor.py small
 python scripts/add_pollution_weights.py small
 ```
 
-## Run the App
+## Run The App
 
 ```bash
 conda activate green_path
@@ -128,50 +139,36 @@ Copy `.env.example` if your hosting provider supports environment files.
 | `PORT` | `5000` | Flask server port |
 | `GREENPATH_GRAPH_FILE` | `jakarta_network_processed.pkl` | Processed graph filename |
 
-## Backend Change Notes
+## Backend Notes
 
-Major changes:
+Major behavior:
 
 - Backend routes are standardized around `/api/route`, `/api/map-context`, and `/api/health`.
-- `/get_route` remains available as a backwards-compatible route alias.
-- The route pipeline uses `data/raw/jakarta_network_large.graphml` for Greater Jakarta and writes `data/processed/jakarta_network_processed.pkl`.
+- `/get_route` remains available as a backwards-compatible route API alias.
+- The app reads a preprocessed graph from `data/processed/` rather than fetching road data at startup.
 - Pollution is modeled as simplified emitted particulate mass: `PM2.5 mg` and `PM10 mg`.
 
-Minor changes:
+Compatibility details:
 
 - The graph loads lazily, so the app can return clear JSON setup errors instead of crashing at import time.
 - `pollution_score` remains in API responses as a compatibility alias for `pm25_mg`.
-- `scripts/add_pollution_weights.py` now supports `large`, `small`, `2`, and `1` command arguments.
-- The processing script now prints the actual processed output path after saving.
+- `scripts/add_pollution_weights.py` supports `large`, `small`, `2`, and `1` command arguments.
+- The processing script prints the processed output path after saving.
 
-## Multimedia Roadmap
+## Product Notes
 
-The final Multimedia Systems submission should include:
+GreenPath AI uses text, map visuals, route animation, audio cues, and a landing-page
+video background to make route comparison easier to understand. These media elements
+support the app experience rather than defining the product scope.
 
-- [x] Text: landing page copy, route stats, comparison summary
-- [x] Picture/Image: Leaflet map and generated network map asset
-- [x] Audio: user-controlled generated route-complete sound cue
-- [x] Video: landing hero looping demo placeholder
-- [x] Animation: A* exploration and route display animation
-
-Pollution is displayed as simplified emitted particulate mass: `PM2.5 mg` and
-`PM10 mg` for one representative vehicle. It is useful for comparing route
-alternatives inside this project, not for ambient air-concentration claims.
-
-Asset folders:
-
-```txt
-web/assets/images/
-web/assets/audio/
-web/assets/video/
-```
-
-The current app uses generated placeholders, so missing media files do not break the
-interface. Replace them later with final presentation assets if needed.
+PM values are simplified emitted particulate-mass estimates for one representative
+vehicle. They are useful for comparing route alternatives inside this app, not for
+official air-quality or ambient-concentration claims.
 
 ## Deployment Direction
 
-Recommended phase-one deployment: a single Flask app on Render or Railway.
+Recommended phase-one deployment: a single Flask app on Railway, Render, or a similar
+Python web host.
 
 The included `Procfile` uses:
 
@@ -179,18 +176,17 @@ The included `Procfile` uses:
 web: python src/app.py
 ```
 
-Before deploying, confirm that the processed graph file is included or generated during
-setup. The app can start without the graph, but `/api/route` will return a clear JSON
-error until the graph is available.
+Before deploying, confirm that the processed graph file is included. The app can start
+without the graph, but `/api/route` will return a clear JSON error until the graph is
+available.
 
 ## Phase One Goal
 
 Phase one focuses on structure, deployment readiness, and clarity:
 
 - Keep the name GreenPath AI
-- Keep Flask plus static frontend
-- Standardize around Greater Jakarta
+- Keep Flask plus a static frontend
+- Use a preprocessed road graph for reliable deployment
 - Use Bootstrap as the UI library
-- Simplify backend routing
-- Add `/api/health`
-- Prepare for multimedia UI work in phase two
+- Keep backend routing simple and documented
+- Provide a polished route-comparison flow for users

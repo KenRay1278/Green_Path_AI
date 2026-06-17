@@ -19,6 +19,7 @@ let routeMode = "compare";
 let soundEnabled = true;
 let soundVolume = 0.7;
 let animationSpeed = "normal";
+let particleQuality = "low";
 let audioContext = null;
 let statsManuallyClosed = false;
 
@@ -84,6 +85,9 @@ function wireControls() {
     });
     document.querySelectorAll("[data-animation-speed]").forEach((button) => {
         button.addEventListener("click", () => setAnimationSpeed(button.dataset.animationSpeed));
+    });
+    document.querySelectorAll("[data-particle-quality]").forEach((button) => {
+        button.addEventListener("click", () => setParticleQuality(button.dataset.particleQuality));
     });
     document.getElementById("soundVolume").addEventListener("input", (event) => {
         soundVolume = Number(event.target.value) / 100;
@@ -197,10 +201,10 @@ function setStatus(message) {
 function makeRouteIcon(type) {
     const label = type === "start" ? "Start" : "End";
     return L.divIcon({
-        html: `<div class="route-marker ${type}"><span>${label}</span></div>`,
+        html: `<div class="route-marker ${type}"><span class="marker-pin" aria-hidden="true"></span><span class="marker-text">${label}</span></div>`,
         className: "",
-        iconSize: [76, 34],
-        iconAnchor: [38, 30],
+        iconSize: [92, 34],
+        iconAnchor: [18, 30],
         popupAnchor: [0, -28],
     });
 }
@@ -208,14 +212,13 @@ function makeRouteIcon(type) {
 function onMapClick(e) {
     ensureAudioContext();
     if (!isInsidePlayableArea(e.latlng)) {
-        setStatus("Choose a point inside the Greater Jakarta route area.");
-        showToast("Choose a point inside the Greater Jakarta route area.", "error");
+        setStatus("Choose a point inside the available route area.");
+        showToast("Choose a point inside the available route area.", "error");
         return;
     }
 
     if (!startMarker) {
         startMarker = L.marker(e.latlng, { icon: makeRouteIcon("start") }).addTo(markersLayer);
-        startMarker.bindTooltip("Start point", { direction: "top", offset: [0, -26] }).openTooltip();
         setStatus("Start selected. Now choose a destination.");
         playPinSound("start");
         showToast("Start point set");
@@ -224,7 +227,6 @@ function onMapClick(e) {
 
     if (!endMarker) {
         endMarker = L.marker(e.latlng, { icon: makeRouteIcon("end") }).addTo(markersLayer);
-        endMarker.bindTooltip("Destination", { direction: "top", offset: [0, -26] }).openTooltip();
         setStatus("Calculating fastest and greenest routes...");
         playPinSound("end");
         getRoutes(startMarker.getLatLng(), endMarker.getLatLng());
@@ -317,7 +319,7 @@ async function runAnimation() {
         }
 
         await animateRouteDraw();
-        fadeAnimationLayer();
+        clearAnimationLayers();
     } finally {
         animationRunning = false;
     }
@@ -337,8 +339,8 @@ async function animateExploration(edges, color, routeNodeKeys) {
         if (classified.faint.length) {
             L.polyline(classified.faint, {
                 color,
-                weight: isMobile ? 1 : 1.5,
-                opacity: 0.16,
+                weight: isMobile ? 1 : 1.25,
+                opacity: isMobile ? 0.11 : 0.15,
                 interactive: false,
             }).addTo(visitedLayer);
         }
@@ -353,8 +355,8 @@ async function animateExploration(edges, color, routeNodeKeys) {
         if (frontierFaint.length) {
             L.polyline(frontierFaint, {
                 color: color === colors.mutedGreen ? colors.greenest : colors.fastest,
-                weight: isMobile ? 2 : 3,
-                opacity: 0.5,
+                weight: isMobile ? 2 : 2.75,
+                opacity: isMobile ? 0.46 : 0.55,
                 interactive: false,
             }).addTo(frontierLayer);
         }
@@ -362,7 +364,7 @@ async function animateExploration(edges, color, routeNodeKeys) {
         if (frontierHot.length) {
             L.polyline(frontierHot, {
                 color: "#f8fafc",
-                weight: isMobile ? 2.5 : 3.5,
+                weight: isMobile ? 2.5 : 3.25,
                 opacity: 0.62,
                 interactive: false,
             }).addTo(frontierLayer);
@@ -378,34 +380,45 @@ async function animateExploration(edges, color, routeNodeKeys) {
 function getAnimationConfig() {
     const configs = {
         slow: {
-            maxEdges: 2200,
-            mobileMaxEdges: 900,
-            batchSize: 24,
-            mobileBatchSize: 16,
-            routeFramesMax: 64,
+            maxEdges: 900,
+            mobileMaxEdges: 360,
+            batchSize: 22,
+            mobileBatchSize: 14,
+            routeFramesMax: 84,
             routeStepDivisor: 3,
-            frameDelay: 24,
+            frameDelay: 72,
         },
         normal: {
-            maxEdges: 1850,
-            mobileMaxEdges: 760,
-            batchSize: 32,
-            mobileBatchSize: 22,
-            routeFramesMax: 46,
-            routeStepDivisor: 4,
-            frameDelay: 8,
+            maxEdges: 900,
+            mobileMaxEdges: 360,
+            batchSize: 56,
+            mobileBatchSize: 34,
+            routeFramesMax: 34,
+            routeStepDivisor: 7,
+            frameDelay: 18,
         },
         fast: {
-            maxEdges: 1400,
-            mobileMaxEdges: 620,
-            batchSize: 52,
-            mobileBatchSize: 34,
-            routeFramesMax: 28,
-            routeStepDivisor: 6,
+            maxEdges: 900,
+            mobileMaxEdges: 360,
+            batchSize: 140,
+            mobileBatchSize: 82,
+            routeFramesMax: 12,
+            routeStepDivisor: 18,
             frameDelay: 0,
         },
     };
-    return configs[animationSpeed] || configs.normal;
+    const particleScales = {
+        low: 0.28,
+        medium: 1,
+        high: 3.2,
+    };
+    const selected = configs[animationSpeed] || configs.normal;
+    const scale = particleScales[particleQuality] || particleScales.low;
+    return {
+        ...selected,
+        maxEdges: Math.max(160, Math.round(selected.maxEdges * scale)),
+        mobileMaxEdges: Math.max(90, Math.round(selected.mobileMaxEdges * scale)),
+    };
 }
 
 function classifyExplorationBatch(batch, routeNodeKeys) {
@@ -449,20 +462,6 @@ function nextFrame(delay = 0) {
                 resolve();
             }
         });
-    });
-}
-
-function fadeAnimationLayer() {
-    frontierLayer.clearLayers();
-    visitedLayer.eachLayer((layer) => {
-        if (layer.setStyle) {
-            layer.setStyle({ opacity: 0.12 });
-        }
-    });
-    animationLayer.eachLayer((layer) => {
-        if (layer.setStyle) {
-            layer.setStyle({ opacity: 0.08 });
-        }
     });
 }
 
@@ -804,6 +803,14 @@ function setAnimationSpeed(speed) {
         button.classList.toggle("active", button.dataset.animationSpeed === animationSpeed);
     });
     showToast(`Animation speed: ${animationSpeed}`);
+}
+
+function setParticleQuality(quality) {
+    particleQuality = ["low", "medium", "high"].includes(quality) ? quality : "low";
+    document.querySelectorAll("[data-particle-quality]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.particleQuality === particleQuality);
+    });
+    showToast(`Particle quantity: ${particleQuality}`);
 }
 
 function toggleLegend() {

@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GreenPath AI - Greater Jakarta route visualizer</title>
+    <title>GreenPath AI - Route Comparison</title>
+    <link rel="icon" href="assets/images/favicon.svg" type="image/svg+xml">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="landing.css">
 </head>
@@ -35,15 +36,15 @@
             </div>
 
             <div class="hero-copy">
-                <p class="eyebrow">Greater Jakarta route comparison</p>
+                <p class="eyebrow">Smarter route comparison</p>
                 <h1>GreenPath AI</h1>
                 <p class="hero-subtitle">
-                    Compare the fastest route with a lower-emission route on a real Greater Jakarta
-                    road graph, with animated A* search and simple PM2.5 route estimates.
+                    Compare fast and lower-emission routes with clear map animation,
+                    route insights, and simplified PM2.5 estimates.
                 </p>
                 <div class="hero-actions">
                     <a href="/app" class="primary-action">Launch map</a>
-                    <a href="#overview" class="secondary-action">See overview</a>
+                    <button class="secondary-action" type="button" data-scroll-target="overview">See overview</button>
                 </div>
             </div>
         </section>
@@ -78,5 +79,15 @@
         <p>A Binus University project - Multimedia Systems x Artificial Intelligence</p>
         <p>Built with Flask, Leaflet, Bootstrap, OpenStreetMap, OSMnx, NetworkX, and CARTO map tiles.</p>
     </footer>
+    <script>
+        document.querySelectorAll("[data-scroll-target]").forEach((button) => {
+            button.addEventListener("click", () => {
+                document.getElementById(button.dataset.scrollTarget)?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start"
+                });
+            });
+        });
+    </script>
 </body>
 </html>

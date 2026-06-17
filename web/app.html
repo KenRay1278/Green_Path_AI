@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Map - GreenPath AI</title>
+    <title>GreenPath AI - Map</title>
+    <link rel="icon" href="assets/images/favicon.svg" type="image/svg+xml">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
     <link rel="stylesheet" href="style.css">
@@ -43,8 +44,8 @@
                 <span class="hud-collapse-icon" aria-hidden="true">−</span>
             </button>
             <div class="hud-content">
-                <p class="hud-kicker">Greater Jakarta</p>
-                <h1>Route Visualizer</h1>
+                <p class="hud-kicker">Route planning</p>
+                <h1>Compare routes</h1>
                 <p id="routeStatus">Choose a start point, then choose a destination.</p>
 
                 <div class="legend-grid" aria-label="Route legend">
@@ -82,6 +83,14 @@
                         <button class="segment-btn" data-animation-speed="fast" type="button">Fast</button>
                     </div>
                 </div>
+                <div class="speed-control" aria-label="Particle quantity">
+                    <span>Particle quantity</span>
+                    <div class="segmented-control" role="group" aria-label="Particle quantity">
+                        <button class="segment-btn active" data-particle-quality="low" type="button">Low</button>
+                        <button class="segment-btn" data-particle-quality="medium" type="button">Medium</button>
+                        <button class="segment-btn" data-particle-quality="high" type="button">High</button>
+                    </div>
+                </div>
             </div>
 
             <div class="control-section">
@@ -100,7 +109,7 @@
                         <span class="slider"></span>
                     </label>
                 </div>
-                <button class="panel-btn" onclick="openAboutModal()" type="button">About This Project</button>
+                <button class="panel-btn" onclick="openAboutModal()" type="button">About GreenPath AI</button>
             </div>
 
             <div class="control-section">
@@ -117,28 +126,27 @@
                 <button class="modal-close" onclick="closeAboutModal()" aria-label="Close about dialog" type="button">×</button>
                 <h2 id="aboutTitle">About GreenPath AI</h2>
                 <p>
-                    GreenPath AI is a multimedia route visualization prototype that compares two A* pathfinding routes:
-                    the fastest route and the greenest route.
+                    GreenPath AI helps compare route choices by showing how a time-first path
+                    differs from a lower-emission alternative on an interactive road map.
                 </p>
-                <h3>How It Works</h3>
+                <h3>How Route Comparison Works</h3>
                 <p>
-                    The A* algorithm searches for a path from the start point to the destination by combining:
+                    The app uses A* search to evaluate paths between two selected points. One
+                    route prioritizes estimated travel time, while the other uses a simplified
+                    particulate-emission cost so the tradeoff is easier to see.
                 </p>
-                <ol>
-                    <li>The cost already travelled</li>
-                    <li>An estimated cost to the destination</li>
-                </ol>
-                <p>In this prototype, A* is run using different route costs:</p>
-                <ul>
-                    <li>Fastest route: prioritizes estimated travel time</li>
-                    <li>Greenest route: prioritizes lower pollution or environmental cost</li>
-                </ul>
-                <h3>Multimedia Elements</h3>
-                <p><strong>Text:</strong> Algorithm and route explanations.</p>
-                <p><strong>Picture:</strong> Map tiles, route icons, and visual markers.</p>
-                <p><strong>Audio:</strong> Route completion cue or interaction sound.</p>
-                <p><strong>Video:</strong> Short explanation/demo video of A* pathfinding.</p>
-                <p><strong>Animation:</strong> Route drawing and path exploration animation.</p>
+                <h3>What The Estimates Mean</h3>
+                <p>
+                    PM2.5 and PM10 values are simplified emitted-mass estimates for route
+                    comparison. They are not official air-quality readings and do not model
+                    wind, traffic volume, weather, or street-level dispersion.
+                </p>
+                <h3>Designed For Clarity</h3>
+                <p>
+                    Route labels, animation, sound feedback, and visual contrast are used to
+                    make the search process understandable without turning the map into a
+                    technical debugging screen.
+                </p>
             </section>
         </div>
 
