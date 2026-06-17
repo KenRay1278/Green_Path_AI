@@ -75,6 +75,7 @@ function initMap() {
     lightTileLayer.addTo(map);
     loadMapContext();
     wireControls();
+    applyInitialResponsiveState();
     map.fitBounds(jakartaBounds, { padding: [28, 28] });
     map.on("click", onMapClick);
 }
@@ -96,7 +97,32 @@ function wireControls() {
     document.getElementById("aboutModal").addEventListener("click", (event) => {
         if (event.target.id === "aboutModal") closeAboutModal();
     });
+    wirePressFeedback();
     updateThemeToggle();
+}
+
+function wirePressFeedback() {
+    document.querySelectorAll("button, .home-link").forEach((control) => {
+        control.addEventListener("click", () => {
+            control.classList.remove("tap-feedback");
+            void control.offsetWidth;
+            control.classList.add("tap-feedback");
+        });
+        control.addEventListener("animationend", () => {
+            control.classList.remove("tap-feedback");
+        });
+    });
+}
+
+function applyInitialResponsiveState() {
+    if (window.matchMedia("(max-width: 560px)").matches) {
+        const panel = document.getElementById("hudPanel");
+        const button = panel?.querySelector(".hud-collapse-btn");
+        const icon = panel?.querySelector(".hud-collapse-icon");
+        panel?.classList.add("collapsed");
+        button?.setAttribute("aria-label", "Expand route information");
+        if (icon) icon.textContent = "+";
+    }
 }
 
 async function loadMapContext() {
